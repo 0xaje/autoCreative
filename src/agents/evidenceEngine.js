@@ -8,6 +8,20 @@ class EvidenceEngine {
   }
 
   /**
+   * Safely normalize a button descriptor (structured object or legacy string) to clean text
+   */
+  normalizeButtonText(button) {
+    if (!button) return '';
+    if (typeof button === 'string') return button.trim();
+    if (typeof button === 'object' && button !== null) {
+      if (typeof button.text === 'string') return button.text.trim();
+      if (typeof button.value === 'string') return button.value.trim();
+      if (typeof button.name === 'string') return button.name.trim();
+    }
+    return '';
+  }
+
+  /**
    * Process all extracted features and claims, classifying each into an Evidence State:
    * VERIFIED | PARTIAL | UNVERIFIED | FUTURE
    */
@@ -24,10 +38,14 @@ class EvidenceEngine {
     const readme = githubData.readmeContent || '';
 
     // Collect all prospective claims from features, headings, and buttons
+    const normalizedButtons = (liveData.buttons || [])
+      .map(b => this.normalizeButtonText(b))
+      .filter(text => text.length > 2);
+
     const prospectiveClaims = [
       ...features.map(f => ({ claim: f, source: 'Features' })),
       ...(liveData.headings || []).map(h => ({ claim: h, source: 'Live Heading' })),
-      ...(liveData.buttons || []).slice(0, 5).map(b => ({ claim: `Actionable: ${b}`, source: 'Live UI Action' }))
+      ...normalizedButtons.slice(0, 5).map(btnText => ({ claim: `Actionable: ${btnText}`, source: 'Live UI Action' }))
     ];
 
     // Deduplicate claims
@@ -120,7 +138,10 @@ class EvidenceEngine {
     }
 
     // Check buttons
-    if (liveData.buttons && liveData.buttons.some(b => lowerClaim.includes(b.toLowerCase()))) {
+    if (liveData.buttons && liveData.buttons.some(b => {
+      const btnText = this.normalizeButtonText(b).toLowerCase();
+      return btnText.length > 2 && (lowerClaim.includes(btnText) || btnText.includes(lowerClaim));
+    })) {
       matchedLiveElement = true;
       matchDescription = 'Action button found in live application interface.';
     }

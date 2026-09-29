@@ -20,7 +20,7 @@
   /* Typography Colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #8492a6;
   --text-dim: #475569;
 
   /* Studio Telemetry & Accents */
@@ -36,9 +36,9 @@
   --status-partial-bg: rgba(245, 158, 11, 0.12);
   --status-partial-border: rgba(245, 158, 11, 0.3);
 
-  --status-unverified: #64748b;
-  --status-unverified-bg: rgba(100, 116, 139, 0.12);
-  --status-unverified-border: rgba(100, 116, 139, 0.3);
+  --status-unverified: #8492a6;
+  --status-unverified-bg: rgba(132, 146, 166, 0.12);
+  --status-unverified-border: rgba(132, 146, 166, 0.3);
 
   --status-future: #8b5cf6;
   --status-future-bg: rgba(139, 92, 246, 0.12);
@@ -1090,7 +1090,7 @@ input[type="range"]::-webkit-slider-thumb {
   background-color: var(--studio-surface);
 }
 
-/* Artifacts Grid (Section 24 Reproducibility) */
+/* Artifacts Grid (Audit Manifests) */
 .artifacts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1331,4 +1331,86 @@ input[type="range"]::-webkit-slider-thumb {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Dynamic Component Classes for Studio Console */
+.evidence-claim-text {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.evidence-confidence-cell {
+  font-family: var(--font-mono);
+}
+
+.evidence-rationale-cell {
+  color: var(--text-secondary);
+}
+
+.evidence-visual-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+}
+
+.workflow-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: var(--studio-surface-elevated);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.workflow-item-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.workflow-item-action {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.script-card {
+  padding: 12px;
+  background-color: var(--studio-surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.script-card-header {
+  font-weight: 700;
+}
+
+.script-card-body {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.archive-project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: var(--studio-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.archive-project-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.archive-project-meta {
+  margin-top: 4px;
+  display: flex;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
 }

@@ -481,11 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       evidenceTableBody.innerHTML = (data.claims || []).map(c => `
         <tr>
-          <td><strong style="color: var(--text-primary);">${c.claim}</strong></td>
+          <td><strong class="evidence-claim-text">${c.claim}</strong></td>
           <td><span class="evidence-pill ${(c.state || '').toLowerCase()}">${c.state}</span></td>
-          <td style="font-family: var(--font-mono);">${Math.round((c.confidence || 0) * 100)}%</td>
-          <td style="color: var(--text-secondary);">${c.rationale || '—'}</td>
-          <td><code style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-primary);">${c.suggestedVisual || '—'}</code></td>
+          <td class="evidence-confidence-cell">${Math.round((c.confidence || 0) * 100)}%</td>
+          <td class="evidence-rationale-cell">${c.rationale || '—'}</td>
+          <td><code class="evidence-visual-code">${c.suggestedVisual || '—'}</code></td>
         </tr>
       `).join('');
     } catch (e) {
@@ -520,9 +520,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modelWorkflowsList) {
         if (data.workflows && data.workflows.length > 0) {
           modelWorkflowsList.innerHTML = data.workflows.map(w => `
-            <div style="display: flex; justify-content: space-between; padding: 6px 10px; background-color: var(--studio-surface-elevated); border-radius: var(--radius-sm); font-size: 12px;">
-              <span style="font-weight: 600; color: var(--text-primary);">${w.name || w.id || 'Interactive Workflow'}</span>
-              <span style="font-family: var(--font-mono); color: var(--text-muted);">${w.action || w.target || 'CDP Exploration'}</span>
+            <div class="workflow-item">
+              <span class="workflow-item-name">${w.name || w.id || 'Interactive Workflow'}</span>
+              <span class="workflow-item-action">${w.action || w.target || 'CDP Exploration'}</span>
             </div>
           `).join('');
         } else {
@@ -538,12 +538,86 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderScript(scenes) {
     if (!scenes || scenes.length === 0) return;
     scriptContainer.innerHTML = scenes.map((s, idx) => `
-      <div style="padding: 12px; background-color: var(--studio-surface); border-radius: var(--radius-sm); margin-bottom: 8px;">
-        <span class="form-hint" style="font-weight: 700;">SCENE 0${idx + 1}: ${s.title.toUpperCase()} (${s.evidenceState || 'VERIFIED'})</span>
-        <p style="margin-top: 6px; font-size: 13px; color: var(--text-primary); line-height: 1.5;">${s.narrationText}</p>
+      <div class="script-card">
+        <span class="form-hint script-card-header">SCENE 0${idx + 1}: ${s.title.toUpperCase()} (${s.evidenceState || 'VERIFIED'})</span>
+        <p class="script-card-body">${s.narrationText}</p>
       </div>
     `).join('');
   }
+
+  // Studio Modal Accessibility Controller (Escape dismissal, Tab focus-trap, Focus restoration)
+  let activeModal = null;
+  let lastActiveElement = null;
+
+  function openStudioModal(modalElement) {
+    if (!modalElement) return;
+    lastActiveElement = document.activeElement;
+    activeModal = modalElement;
+    modalElement.classList.add('active');
+
+    setTimeout(() => {
+      const focusables = Array.from(modalElement.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(el => !el.disabled && el.offsetParent !== null);
+      if (focusables.length > 0) {
+        focusables[0].focus();
+      }
+    }, 50);
+  }
+
+  function closeStudioModal(modalElement) {
+    const target = modalElement || activeModal;
+    if (!target) return;
+    target.classList.remove('active');
+    if (activeModal === target) {
+      activeModal = null;
+    }
+    if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+      lastActiveElement.focus();
+      lastActiveElement = null;
+    }
+  }
+
+  // Keyboard accessibility: Escape key to dismiss & Tab focus-trap
+  document.addEventListener('keydown', (e) => {
+    if (!activeModal || !activeModal.classList.contains('active')) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeStudioModal(activeModal);
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const focusables = Array.from(activeModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(el => !el.disabled && el.offsetParent !== null);
+      if (focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  });
+
+  // Modal overlay click to dismiss
+  [regenModal, artifactModal, archiveModal].forEach(modal => {
+    if (!modal) return;
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeStudioModal(modal);
+      }
+    });
+  });
 
   // Selective Scene Regeneration Modal
   window.__openRegenModal = (sceneIndex) => {
@@ -554,11 +628,11 @@ document.addEventListener('DOMContentLoaded', () => {
     regenSceneIndex.value = sceneIndex;
     regenModalTitle.textContent = `Regenerate Scene ${sceneIndex + 1}: ${scene.title}`;
     regenNarrationText.value = scene.narrationText;
-    regenModal.classList.add('active');
+    openStudioModal(regenModal);
   };
 
   function closeModal() {
-    regenModal.classList.remove('active');
+    closeStudioModal(regenModal);
   }
   if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
   if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
@@ -698,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Section 24 Artifact Cards Click
+  // Audit Manifest Cards Click
   document.querySelectorAll('.artifact-card').forEach(card => {
     card.addEventListener('click', async () => {
       const fileName = card.dataset.file;
@@ -711,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       artifactModalTitle.textContent = fileName;
       artifactCodeContent.textContent = 'Loading artifact content...';
-      artifactModal.classList.add('active');
+      openStudioModal(artifactModal);
 
       try {
         const res = await fetch(`/api/projects/${currentProjectId}/artifacts/${fileName}`);
@@ -730,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function closeArtModal() {
-    if (artifactModal) artifactModal.classList.remove('active');
+    closeStudioModal(artifactModal);
   }
   if (btnCloseArtModal) btnCloseArtModal.addEventListener('click', closeArtModal);
   if (btnCloseArtFooter) btnCloseArtFooter.addEventListener('click', closeArtModal);
@@ -738,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Creative Archive Drawer / Modal
   if (btnOpenArchive) {
     btnOpenArchive.addEventListener('click', async () => {
-      archiveModal.classList.add('active');
+      openStudioModal(archiveModal);
       archiveProjectsList.innerHTML = '<span class="form-hint">Loading past productions...</span>';
 
       try {
@@ -753,10 +827,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         archiveProjectsList.innerHTML = projects.map(p => `
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: var(--studio-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+          <div class="archive-project-row">
             <div>
-              <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">${p.manifest?.projectTitle || p.id}</span>
-              <div style="margin-top: 4px; display: flex; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+              <span class="archive-project-title">${p.manifest?.projectTitle || p.id}</span>
+              <div class="archive-project-meta">
                 <span>${p.inputs?.mode || 'launch'}</span>
                 <span>&bull;</span>
                 <span>${p.inputs?.duration || 60}s</span>
@@ -782,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(`/api/projects/${id}`);
       if (!res.ok) throw new Error('Project not found');
       const project = await res.json();
-      archiveModal.classList.remove('active');
+      closeStudioModal(archiveModal);
       currentProjectId = project.id;
       currentProjectData = project;
       onProductionCompleted(project);
@@ -793,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   function closeArchiveModal() {
-    if (archiveModal) archiveModal.classList.remove('active');
+    closeStudioModal(archiveModal);
   }
   if (btnCloseArchive) btnCloseArchive.addEventListener('click', closeArchiveModal);
   if (btnCloseArchiveFooter) btnCloseArchiveFooter.addEventListener('click', closeArchiveModal);
