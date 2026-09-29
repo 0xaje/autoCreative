@@ -10,7 +10,11 @@
     "start": "node server.js",
     "cli": "node cli.js",
     "demo": "node cli.js --duration 30 --mode launch",
-    "test": "node -e 'console.log(\"Auto-Creative Studio Tests Passed\")'"
+    "test": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/integration/pipeline.test.js && node tests/e2e/production.test.js",
+    "test:unit": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js",
+    "test:integration": "node tests/integration/pipeline.test.js",
+    "test:e2e": "node tests/e2e/production.test.js",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "autonomous",
@@ -26,9 +30,15 @@
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "puppeteer-core": "^24.40.0",
-    "ws": "^8.19.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "ws": "^8.19.0",
+    "zod": "^4.6.5"
   }
 }

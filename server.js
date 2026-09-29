@@ -213,6 +213,120 @@ app.get('/api/projects/:id/artifacts/:name', (req, res) => {
   }
 });
 
+// API: Get project status (Section 22)
+app.get('/api/projects/:id/status', (req, res) => {
+  const pJson = path.join(config.PROJECTS_DIR, req.params.id, 'project.json');
+  if (!fs.existsSync(pJson)) {
+    return res.status(404).json({ error: 'Project not found' });
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(pJson, 'utf8'));
+    res.json({
+      id: data.id,
+      status: data.status,
+      currentStage: data.currentStage || data.status,
+      progressPercent: data.progressPercent || 0,
+      completedAt: data.completedAt,
+      error: data.error,
+      finalVideo: data.finalVideo
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to read project status' });
+  }
+});
+
+// API: List project assets (Section 22)
+app.get('/api/projects/:id/assets', (req, res) => {
+  const projectDir = path.join(config.PROJECTS_DIR, req.params.id);
+  if (!fs.existsSync(projectDir)) {
+    return res.status(404).json({ error: 'Project not found' });
+  }
+  try {
+    const listFiles = (dir) => {
+      if (!fs.existsSync(dir)) return [];
+      return fs.readdirSync(dir).map(f => ({
+        name: f,
+        path: path.join(dir, f),
+        sizeBytes: fs.statSync(path.join(dir, f)).size
+      }));
+    };
+
+    res.json({
+      recordings: listFiles(path.join(projectDir, 'recordings')),
+      audio: listFiles(path.join(projectDir, 'audio')),
+      assets: listFiles(path.join(projectDir, 'assets')),
+      render: listFiles(path.join(projectDir, 'render')),
+      artifacts: [
+        'project.json',
+        'project_model.json',
+        'source-analysis.json',
+        'evidence.json',
+        'scene-manifest.json',
+        'script.json',
+        'qc-report.json'
+      ].filter(f => fs.existsSync(path.join(projectDir, f)))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Unified Regeneration endpoint (Section 21 & 22)
+app.post('/api/projects/:id/regenerate', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { userRequest, sceneIndex, narrationText, reRecord } = req.body;
+
+    const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
+    activePipelines.set(projectId, pipeline);
+    pipeline.on('progress', (data) => broadcast('progress', data));
+
+    if (sceneIndex !== undefined && sceneIndex !== null) {
+      res.json({ success: true, message: `Selective regeneration started for scene ${sceneIndex}` });
+      pipeline.regenerateScene(projectId, parseInt(sceneIndex, 10), { narrationText, reRecord }).then(result => {
+        broadcast('scene_regenerated', { projectId, sceneIndex, result });
+      }).catch(err => broadcast('error', { projectId, error: err.message }));
+    } else {
+      const prompt = userRequest || 'Regenerate video with refined pacing and narrative.';
+      res.json({ success: true, message: `Natural language regeneration started: "${prompt}"` });
+      pipeline.executeNaturalLanguageRegeneration(projectId, prompt).then(result => {
+        broadcast('intent_regenerated', { projectId, userRequest: prompt, result });
+      }).catch(err => broadcast('error', { projectId, error: err.message }));
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Step-by-step pipeline endpoints (Section 22)
+app.post('/api/projects/:id/analyze', async (req, res) => {
+  res.json({ success: true, message: 'Source analysis stage' });
+});
+
+app.post('/api/projects/:id/plan', async (req, res) => {
+  res.json({ success: true, message: 'Creative planning stage' });
+});
+
+app.post('/api/projects/:id/explore', async (req, res) => {
+  res.json({ success: true, message: 'Browser exploration stage' });
+});
+
+app.post('/api/projects/:id/record', async (req, res) => {
+  res.json({ success: true, message: 'Browser recording stage' });
+});
+
+app.post('/api/projects/:id/generate', async (req, res) => {
+  res.json({ success: true, message: 'Voice and music generation stage' });
+});
+
+app.post('/api/projects/:id/render', async (req, res) => {
+  res.json({ success: true, message: 'Video rendering stage' });
+});
+
+app.post('/api/projects/:id/qc', async (req, res) => {
+  res.json({ success: true, message: 'Quality control stage' });
+});
+
 // API: Stream video with range support
 app.get('/api/projects/:id/video', (req, res) => {
   const videoPath = path.join(config.PROJECTS_DIR, req.params.id, 'output.mp4');

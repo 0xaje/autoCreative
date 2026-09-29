@@ -11,10 +11,11 @@ class CreativeDirector {
   /**
    * Plan video story arc, scenes, script, and visual strategy conforming to the PRD Scene Manifest
    */
-  planProduction({ userIntent, projectModel, evidenceSummary, projectDir }) {
-    ensureDir(projectDir);
+  planProduction({ userIntent, intent: directIntent, projectModel, evidenceSummary, evidenceReport, projectDir }) {
+    if (projectDir) ensureDir(projectDir);
 
-    const intent = userIntent || {};
+    const intent = directIntent || userIntent || {};
+    const evidenceData = evidenceReport || evidenceSummary || {};
     const totalDuration = intent.duration_seconds || 60;
     const isVertical = intent.aspect_ratio === '9:16';
     const contentType = intent.content_type || 'product_demo';
@@ -25,7 +26,7 @@ class CreativeDirector {
     const features = (projectModel.features || []).slice(0, 4);
 
     // Retrieve verified claims
-    const verifiedClaims = (evidenceSummary?.claims || [])
+    const verifiedClaims = (evidenceData?.claims || [])
       .filter(c => c.state === 'VERIFIED')
       .map(c => c.claim);
 
@@ -71,10 +72,12 @@ class CreativeDirector {
       }))
     };
 
-    fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(sceneManifest, null, 2), 'utf8');
-    fs.writeFileSync(path.join(projectDir, 'script.json'), JSON.stringify(script, null, 2), 'utf8');
+    if (projectDir) {
+      fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(sceneManifest, null, 2), 'utf8');
+      fs.writeFileSync(path.join(projectDir, 'script.json'), JSON.stringify(script, null, 2), 'utf8');
+    }
 
-    return { manifest: sceneManifest, script };
+    return { manifest: sceneManifest, script, ...sceneManifest };
   }
 
   /**
@@ -131,7 +134,7 @@ class CreativeDirector {
       {
         id: 'hook',
         duration: Math.max(baseDuration - 2, 7),
-        type: 'cinematic_hook',
+        type: 'hook',
         purpose: 'Introduce the problem and capture immediate attention',
         voiceover: `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}.`,
         visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
@@ -142,7 +145,7 @@ class CreativeDirector {
       {
         id: 'product_reveal',
         duration: archDuration,
-        type: 'product_reveal',
+        type: 'problem',
         purpose: 'Reveal the architecture and the core solution',
         voiceover: `Traditional tools are fragmented and manual. ${productName} reimagines the entire experience into an intuitive, unified platform.`,
         visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
@@ -164,7 +167,7 @@ class CreativeDirector {
       {
         id: 'feature_2',
         duration: baseDuration + 2,
-        type: 'product_demo',
+        type: 'feature',
         purpose: 'Demonstrate deep dive feature with real telemetry results',
         voiceover: `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
         visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
@@ -175,7 +178,7 @@ class CreativeDirector {
       {
         id: 'outro_cta',
         duration: Math.max(baseDuration - 3, 7),
-        type: 'call_to_action',
+        type: 'ending',
         purpose: 'Encourage adoption with clear next steps',
         voiceover: `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output.`,
         visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],

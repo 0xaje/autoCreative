@@ -111,5 +111,6 @@ function ensureDir(dirPath) {
 module.exports = {
   runFFmpeg,
   getVideoMetadata,
+  getMediaMetadata: getVideoMetadata,
   ensureDir
 };

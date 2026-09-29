@@ -11,8 +11,12 @@ class EvidenceEngine {
    * Process all extracted features and claims, classifying each into an Evidence State:
    * VERIFIED | PARTIAL | UNVERIFIED | FUTURE
    */
+  classifyEvidence(sourceAnalysis, projectDir) {
+    return this.processEvidence(sourceAnalysis, projectDir);
+  }
+
   processEvidence(sourceAnalysis, projectDir) {
-    ensureDir(projectDir);
+    if (projectDir) ensureDir(projectDir);
 
     const liveData = sourceAnalysis.liveData || {};
     const githubData = sourceAnalysis.githubData || {};
@@ -65,8 +69,10 @@ class EvidenceEngine {
     };
 
     // Save evidence.json
-    const evidencePath = path.join(projectDir, 'evidence.json');
-    fs.writeFileSync(evidencePath, JSON.stringify(summary, null, 2), 'utf8');
+    if (projectDir) {
+      const evidencePath = path.join(projectDir, 'evidence.json');
+      fs.writeFileSync(evidencePath, JSON.stringify(summary, null, 2), 'utf8');
+    }
 
     return summary;
   }

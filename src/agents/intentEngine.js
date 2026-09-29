@@ -33,8 +33,8 @@ class IntentEngine {
 
     // 2. Duration Parsing
     let durationSeconds = 60;
-    const secMatch = text.match(/(\d+)\s*(?:seconds?|secs?|s\b)/);
-    const minMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|m\b)/);
+    const secMatch = text.match(/(\d+)\s*[-]?\s*(?:seconds?|secs?|s\b)/);
+    const minMatch = text.match(/(\d+(?:\.\d+)?)\s*[-]?\s*(?:minutes?|mins?|m\b)/);
 
     if (secMatch) {
       durationSeconds = parseInt(secMatch[1], 10);
