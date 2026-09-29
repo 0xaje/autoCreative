@@ -25,13 +25,16 @@ class GeminiFlashProvider extends AIProvider {
     this.modelName = 'gemini-2.5-flash';
   }
 
+  isAvailable() {
+    return Boolean(this.apiKey);
+  }
+
   async generateText(input) {
     const prompt = typeof input === 'string' ? input : input.prompt;
     if (!this.apiKey) {
-      // Graceful deterministic fallback
       return {
-        text: `Autonomous narrative generated for: ${prompt.slice(0, 100)}...`,
-        model: this.modelName
+        text: `Deterministic studio narrative for: ${prompt.slice(0, 100)}...`,
+        model: 'deterministic-fallback'
       };
     }
 
@@ -47,8 +50,8 @@ class GeminiFlashProvider extends AIProvider {
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       return { text, model: this.modelName };
     } catch (e) {
-      console.warn('Gemini API call failed, falling back to heuristic generation:', e.message);
-      return { text: `Product narrative for: ${prompt}`, model: 'fallback' };
+      console.warn('Gemini API call failed, falling back to deterministic generation:', e.message);
+      return { text: `Product narrative for: ${prompt}`, model: 'deterministic-fallback' };
     }
   }
 
@@ -67,6 +70,10 @@ class GeminiFlashProvider extends AIProvider {
 }
 
 class DeterministicAIProvider extends AIProvider {
+  isAvailable() {
+    return false; // Deterministic rule-based fallback, not an LLM provider
+  }
+
   async generateText(input) {
     const prompt = typeof input === 'string' ? input : input.prompt;
     return {
@@ -80,8 +87,19 @@ class DeterministicAIProvider extends AIProvider {
   }
 }
 
+function getAIProvider(preferred) {
+  if (preferred === 'deterministic') {
+    return new DeterministicAIProvider();
+  }
+  if (process.env.GEMINI_API_KEY) {
+    return new GeminiFlashProvider(process.env.GEMINI_API_KEY);
+  }
+  return new DeterministicAIProvider();
+}
+
 module.exports = {
   AIProvider,
   GeminiFlashProvider,
-  DeterministicAIProvider
+  DeterministicAIProvider,
+  getAIProvider
 };

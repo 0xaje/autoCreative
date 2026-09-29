@@ -16,7 +16,8 @@ function parseArgs() {
     duration: 60,
     aspectRatio: '16:9',
     voiceId: 'en-US-ChristopherNeural',
-    musicStyle: 'cinematic'
+    musicStyle: 'cinematic',
+    isDemo: false
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -24,6 +25,10 @@ function parseArgs() {
     if (arg === '--github' || arg === '-g') options.githubUrl = args[++i];
     else if (arg === '--live' || arg === '-l') options.liveUrl = args[++i];
     else if (arg === '--local') options.localPath = args[++i];
+    else if (arg === '--demo') {
+      options.isDemo = true;
+      options.localPath = path.resolve(__dirname, 'demo-apps/saas-analytics');
+    }
     else if (arg === '--prompt' || arg === '-p') options.prompt = args[++i];
     else if (arg === '--mode' || arg === '-m') options.mode = args[++i];
     else if (arg === '--duration' || arg === '-d') options.duration = parseInt(args[++i], 10);
@@ -41,6 +46,7 @@ Options:
   --github, -g <url>     GitHub repository URL
   --live, -l <url>       Live application URL
   --local <path>         Local directory or HTML file
+  --demo                 Explicitly run with built-in PulseFlow SaaS demo
   --prompt, -p <text>    Natural-language creative video request
   --mode, -m <mode>      Creative mode (launch, demo, presentation, explainer, tutorial, social_short)
   --duration, -d <secs>  Target video duration in seconds (e.g. 60, 90, 30)
@@ -58,10 +64,11 @@ Example:
     }
   }
 
-  // If no source provided, default to bundled SaaS demo application
+  // If no source provided, default to bundled SaaS demo application in explicit DEMO mode
   if (!options.githubUrl && !options.liveUrl && !options.localPath) {
     options.localPath = path.resolve(__dirname, 'demo-apps/saas-analytics');
-    console.log('💡 No source specified. Using built-in PulseFlow SaaS demonstration app.');
+    options.isDemo = true;
+    console.log('💡 No source specified. Explicitly using built-in PulseFlow SaaS demonstration app (sourceMode: DEMO).');
   }
 
   return options;
@@ -101,7 +108,8 @@ async function main() {
       duration: options.duration,
       aspectRatio: options.aspectRatio,
       voiceId: options.voiceId,
-      musicStyle: options.musicStyle
+      musicStyle: options.musicStyle,
+      isDemo: options.isDemo
     });
 
     console.log('\n\n===============================================================');

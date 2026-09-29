@@ -59,12 +59,19 @@ class EvidenceEngine {
       }
     }
 
+    const sourceMode = sourceAnalysis.sourceMode || (liveData.url ? 'LIVE_URL' : 'REPOSITORY_ANALYSIS_ONLY');
+    const sourceLocation = liveData.url || githubData.target || sourceAnalysis.inputs?.liveUrl || sourceAnalysis.inputs?.githubUrl || sourceAnalysis.inputs?.localPath || 'workspace';
+
     // Evaluate each claim against evidence
     const evaluatedEvidence = uniqueClaims.map(item => {
-      const evaluation = this.evaluateSingleClaim(item.claim, liveData, githubData, readme);
+      const evaluation = this.evaluateSingleClaim(item.claim, liveData, githubData, readme, sourceMode);
       return {
         claim: item.claim,
         source: item.source,
+        sourceType: sourceMode,
+        sourceLocation: sourceLocation,
+        observation: evaluation.observation || item.claim,
+        verificationMethod: evaluation.verificationMethod || 'HEURISTIC_EVALUATION',
         state: evaluation.state,
         confidence: evaluation.confidence,
         rationale: evaluation.rationale,
@@ -74,6 +81,8 @@ class EvidenceEngine {
     });
 
     const summary = {
+      sourceMode,
+      sourceLocation,
       totalClaims: evaluatedEvidence.length,
       verifiedCount: evaluatedEvidence.filter(e => e.state === 'VERIFIED').length,
       partialCount: evaluatedEvidence.filter(e => e.state === 'PARTIAL').length,
@@ -98,7 +107,7 @@ class EvidenceEngine {
   /**
    * Evaluate a single statement against live DOM, code dependencies, and text patterns
    */
-  evaluateSingleClaim(claim, liveData, githubData, readme) {
+  evaluateSingleClaim(claim, liveData, githubData, readme, sourceMode = 'LIVE_URL') {
     const lowerClaim = claim.toLowerCase();
 
     // 1. Check if future/roadmap
@@ -108,19 +117,23 @@ class EvidenceEngine {
         state: 'FUTURE',
         confidence: 0.95,
         demonstrable: false,
+        verificationMethod: 'ROADMAP_KEYWORD_MATCH',
+        observation: 'Explicitly labeled as future/roadmap item in source material',
         rationale: 'Explicitly labeled as future/roadmap item in source material.',
         suggestedVisual: 'Roadmap preview card'
       };
     }
 
     // Check if mentioned in README as future
-    const readmeLines = readme.split('\n');
+    const readmeLines = (readme || '').split('\n');
     for (const line of readmeLines) {
       if (line.toLowerCase().includes(lowerClaim) && futureKeywords.some(kw => line.toLowerCase().includes(kw))) {
         return {
           state: 'FUTURE',
           confidence: 0.90,
           demonstrable: false,
+          verificationMethod: 'ROADMAP_KEYWORD_MATCH',
+          observation: 'Roadmap keyword in repository documentation',
           rationale: 'Found in roadmap / upcoming section of repository documentation.',
           suggestedVisual: 'Roadmap preview card'
         };
@@ -167,6 +180,8 @@ class EvidenceEngine {
         state: 'VERIFIED',
         confidence: 0.98,
         demonstrable: true,
+        verificationMethod: 'DOM_QUERY',
+        observation: matchDescription,
         rationale: `Cross-verified: ${matchDescription} and backed by verified codebase dependencies.`,
         suggestedVisual: 'Live interactive screen recording with cursor click'
       };
@@ -177,17 +192,24 @@ class EvidenceEngine {
         state: 'VERIFIED',
         confidence: 0.92,
         demonstrable: true,
+        verificationMethod: 'DOM_QUERY',
+        observation: matchDescription,
         rationale: matchDescription,
         suggestedVisual: 'Real screen recording of UI element'
       };
     }
 
     if (techMatched) {
+      const isRepoOnly = sourceMode === 'REPOSITORY_ANALYSIS_ONLY';
       return {
-        state: 'PARTIAL',
-        confidence: 0.75,
-        demonstrable: false,
-        rationale: 'Verified in codebase dependencies, but not directly present as a prominent live UI element.',
+        state: isRepoOnly ? 'VERIFIED' : 'PARTIAL',
+        confidence: isRepoOnly ? 0.95 : 0.75,
+        demonstrable: isRepoOnly,
+        verificationMethod: 'PACKAGE_INSPECTION',
+        observation: 'Found declared dependency in package.json configuration',
+        rationale: isRepoOnly
+          ? 'Verified dependency in repository package configuration.'
+          : 'Verified in codebase dependencies, but not directly present as a prominent live UI element.',
         suggestedVisual: 'Code/architecture callout card'
       };
     }
@@ -199,8 +221,23 @@ class EvidenceEngine {
         state: 'UNVERIFIED',
         confidence: 0.85,
         demonstrable: false,
+        verificationMethod: 'HEURISTIC_EVALUATION',
+        observation: 'High-level assertion lacking verifiable proof',
         rationale: 'Marketing claim lacking verifiable UI evidence or runtime benchmarks.',
         suggestedVisual: 'Omit from factual narration'
+      };
+    }
+
+    // If repository-only and found in features from README
+    if (sourceMode === 'REPOSITORY_ANALYSIS_ONLY') {
+      return {
+        state: 'VERIFIED',
+        confidence: 0.88,
+        demonstrable: true,
+        verificationMethod: 'DOCUMENTATION_SCAN',
+        observation: 'Documented capability in repository README',
+        rationale: 'Verified feature in repository documentation.',
+        suggestedVisual: 'Code and capability showcase card'
       };
     }
 
@@ -209,6 +246,8 @@ class EvidenceEngine {
       state: 'PARTIAL',
       confidence: 0.65,
       demonstrable: false,
+      verificationMethod: 'DOCUMENTATION_SCAN',
+      observation: 'Found in feature list, pending interactive verification',
       rationale: 'Documented in product features, pending interactive verification.',
       suggestedVisual: 'Feature highlight badge'
     };

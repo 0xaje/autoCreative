@@ -106,6 +106,194 @@ class MotionDesigner {
     const productName = sourceAnalysis.name || 'Autonomous Studio';
     const tagline = sourceAnalysis.tagline || 'Next-Gen Creative Production';
 
+    const techStack = sourceAnalysis.integrations || sourceAnalysis.githubData?.detectedTech || [];
+    const features = sourceAnalysis.features || [];
+    const sourceTree = sourceAnalysis.githubData?.sourceTree || ['src/', 'package.json', 'README.md'];
+    const featureName = scene.overlay?.lowerThird?.subtitle || scene.title || 'Verified Architecture';
+
+    if (motionType === 'code_walkthrough') {
+      const techBadges = techStack.slice(0, 6).map(t =>
+        `<span style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(129, 140, 248, 0.4); padding: 8px 18px; border-radius: 8px; font-size: 16px; font-weight: 600; color: #c7d2fe;">${t}</span>`
+      ).join('');
+
+      const treeItems = sourceTree.slice(0, 8).map(f =>
+        `<div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 16px; color: #94a3b8; padding: 4px 0;"><span style="color: #6366f1;">📄</span> ${f}</div>`
+      ).join('');
+
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              width: ${width}px;
+              height: ${height}px;
+              background: #090d16;
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 60px;
+              overflow: hidden;
+            }
+            .container {
+              display: flex;
+              gap: 40px;
+              width: 100%;
+              max-width: 1300px;
+            }
+            .left-col {
+              flex: 1.2;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+            }
+            .right-col {
+              flex: 0.8;
+              background: rgba(15, 23, 42, 0.8);
+              border: 1px solid rgba(255, 255, 255, 0.12);
+              border-radius: 20px;
+              padding: 32px;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            }
+            .badge {
+              display: inline-block;
+              padding: 8px 20px;
+              background: rgba(99, 102, 241, 0.2);
+              border: 1px solid rgba(129, 140, 248, 0.4);
+              border-radius: 9999px;
+              color: #a5b4fc;
+              font-size: 15px;
+              font-weight: 700;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              margin-bottom: 24px;
+            }
+            h2 {
+              font-size: 52px;
+              font-weight: 900;
+              letter-spacing: -1px;
+              line-height: 1.15;
+              margin-bottom: 20px;
+              background: linear-gradient(135deg, #ffffff, #c7d2fe);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            p {
+              font-size: 22px;
+              color: #94a3b8;
+              line-height: 1.6;
+              margin-bottom: 32px;
+            }
+            .tech-wrap {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="left-col">
+              <div class="badge">REPOSITORY ARCHITECTURE</div>
+              <h2>${productName}</h2>
+              <p>Verified codebase structure and technical dependencies powering autonomous execution.</p>
+              <div class="tech-wrap">
+                ${techBadges || '<span style="color:#94a3b8;">Standard Production Stack</span>'}
+              </div>
+            </div>
+            <div class="right-col">
+              <div style="font-size: 14px; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Verified Repository Structure</div>
+              <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.06);">
+                ${treeItems}
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    if (motionType === 'feature_card_flow') {
+      const featPills = features.slice(0, 4).map(f =>
+        `<div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(99, 102, 241, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #a5b4fc;">✓</div>
+          <div>
+            <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${f}</div>
+            <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository documentation</div>
+          </div>
+        </div>`
+      ).join('');
+
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              width: ${width}px;
+              height: ${height}px;
+              background: #090d16;
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              padding: 60px;
+              overflow: hidden;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 40px;
+            }
+            .badge {
+              display: inline-block;
+              padding: 8px 20px;
+              background: rgba(16, 185, 129, 0.2);
+              border: 1px solid rgba(52, 211, 153, 0.4);
+              border-radius: 9999px;
+              color: #6ee7b7;
+              font-size: 14px;
+              font-weight: 700;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+              margin-bottom: 16px;
+            }
+            h2 {
+              font-size: 48px;
+              font-weight: 900;
+              background: linear-gradient(135deg, #ffffff, #cbd5e1);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 24px;
+              width: 100%;
+              max-width: 1100px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="badge">VERIFIED CAPABILITIES</div>
+            <h2>${featureName}</h2>
+          </div>
+          <div class="grid">
+            ${featPills || '<div style="color:#94a3b8; text-align:center; grid-column: span 2;">Verified architecture features</div>'}
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
     if (motionType === 'outro_cta') {
       return `
         <!DOCTYPE html>

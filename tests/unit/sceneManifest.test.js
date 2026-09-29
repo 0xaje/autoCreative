@@ -28,14 +28,19 @@ const evidenceReport = {
   ]
 };
 
-const manifest = director.planProduction({
-  intent,
-  projectModel,
-  evidenceReport
+(async () => {
+  const manifest = await director.planProduction({
+    intent,
+    projectModel,
+    evidenceReport
+  });
+
+  assert(manifest.scenes.length >= 4, 'Manifest must have at least 4 scenes');
+  assert.strictEqual(manifest.duration, 60, 'Total timeline duration must match requested duration');
+  assert(manifest.scenes.some(s => s.type === 'product_demo'), 'Must include product demo scene');
+
+  console.log(`✅ Unit Test Passed: Scene Manifest Planning (${manifest.scenes.length} scenes planned, ${manifest.duration}s target)`);
+})().catch(err => {
+  console.error('Scene manifest test failed:', err);
+  process.exit(1);
 });
-
-assert(manifest.scenes.length >= 4, 'Manifest must have at least 4 scenes');
-assert.strictEqual(manifest.duration, 60, 'Total timeline duration must match requested duration');
-assert(manifest.scenes.some(s => s.type === 'product_demo'), 'Must include product demo scene');
-
-console.log(`✅ Unit Test Passed: Scene Manifest Planning (${manifest.scenes.length} scenes planned, ${manifest.duration}s target)`);

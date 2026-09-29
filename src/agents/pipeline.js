@@ -57,6 +57,7 @@ class ProductionPipeline extends EventEmitter {
     githubUrl,
     liveUrl,
     localPath,
+    isDemo,
     prompt,
     mode,
     duration,
@@ -68,19 +69,50 @@ class ProductionPipeline extends EventEmitter {
     const id = projectId || `proj_${Date.now()}`;
     const projectDir = ensureDir(path.join(config.PROJECTS_DIR, id));
 
+    // Determine truthful source mode
+    let sourceMode = 'LIVE_URL';
+    if (isDemo || mode === 'sample' || (localPath && localPath.includes('demo-apps/saas-analytics'))) {
+      sourceMode = 'DEMO';
+    } else if (liveUrl) {
+      sourceMode = 'LIVE_URL';
+    } else if (localPath) {
+      const resolved = path.resolve(localPath);
+      if (!fs.existsSync(resolved)) {
+        throw this.wrapError('SOURCE_UNAVAILABLE', `Local application or repository path not found: ${localPath}`);
+      }
+      const hasExecutableHtml = fs.statSync(resolved).isDirectory()
+        ? (fs.existsSync(path.join(resolved, 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'public', 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'src', 'public', 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'dist', 'index.html')))
+        : resolved.endsWith('.html');
+      if (githubUrl && hasExecutableHtml) {
+        sourceMode = 'REPOSITORY_EXECUTED';
+      } else {
+        sourceMode = hasExecutableHtml ? 'LOCAL_APP' : 'REPOSITORY_ANALYSIS_ONLY';
+      }
+    } else if (githubUrl) {
+      sourceMode = 'REPOSITORY_ANALYSIS_ONLY';
+    } else {
+      throw this.wrapError('SOURCE_EXECUTION_UNAVAILABLE', 'At least one valid source (liveUrl, localPath, or githubUrl) is required.');
+    }
+
     const projectData = {
       id,
-      projectName: projectName || 'Autonomous Project',
+      projectName: projectName || (sourceMode === 'DEMO' ? 'PulseFlow SaaS Demo' : 'Project Workspace'),
       createdAt: new Date().toISOString(),
       status: PROJECT_STATES.CREATED,
       currentStage: PROJECT_STATES.CREATED,
       progressPercent: 0,
+      sourceMode,
       inputs: {
         projectName,
         githubUrl: githubUrl || null,
         liveUrl: liveUrl || null,
         localPath: localPath || null,
-        prompt: prompt || 'Professional product presentation video showcasing key capabilities',
+        sourceMode,
+        isDemo: sourceMode === 'DEMO',
+        prompt: prompt || 'Professional presentation video showcasing key capabilities',
         mode,
         duration,
         aspectRatio,
@@ -119,7 +151,7 @@ class ProductionPipeline extends EventEmitter {
     };
 
     try {
-      setStage(PROJECT_STATES.CREATED, `Initializing production for [${id}]...`, 5, 'Creative Director');
+      setStage(PROJECT_STATES.CREATED, `Initializing production for [${id}] in mode [${sourceMode}]...`, 5, 'Creative Director');
 
       // 1. Intent Engine (Parse natural language creative request into Intent Model)
       const userIntent = this.intentEngine.parseIntent(prompt, {
@@ -132,7 +164,7 @@ class ProductionPipeline extends EventEmitter {
       projectData.intent = userIntent;
 
       // 2. Researcher: ANALYZING -> UNDERSTOOD
-      setStage(PROJECT_STATES.ANALYZING, 'Analyzing repository structure, documentation, and live application DOM...', 12, 'Researcher');
+      setStage(PROJECT_STATES.ANALYZING, `Analyzing source structure and intelligence for [${sourceMode}]...`, 12, 'Researcher');
 
       let projectModel = null;
       try {
@@ -141,6 +173,7 @@ class ProductionPipeline extends EventEmitter {
           githubUrl,
           liveUrl,
           localPath,
+          isDemo: sourceMode === 'DEMO',
           projectDir,
           onProgress: (p) => setStage(PROJECT_STATES.ANALYZING, p.message, 18, p.agent)
         });
@@ -149,6 +182,9 @@ class ProductionPipeline extends EventEmitter {
         projectData.artifacts.understanding = path.join(projectDir, 'understanding.json');
         projectData.projectModel = projectModel;
       } catch (err) {
+        if (err.code === 'LIVE_APP_UNREACHABLE' || err.code === 'SOURCE_UNAVAILABLE') {
+          throw err;
+        }
         throw this.wrapError('LIVE_APP_UNREACHABLE', `Failed to analyze application source: ${err.message}`);
       }
 
@@ -158,6 +194,7 @@ class ProductionPipeline extends EventEmitter {
       const evidenceSummary = this.evidenceEngine.processEvidence(projectModel, projectDir);
       projectData.artifacts.evidence = path.join(projectDir, 'evidence.json');
       projectData.evidenceSummary = {
+        sourceMode,
         total: evidenceSummary.totalClaims,
         verified: evidenceSummary.verifiedCount,
         partial: evidenceSummary.partialCount,
@@ -166,8 +203,8 @@ class ProductionPipeline extends EventEmitter {
       };
 
       // 4. Creative Director: PLANNING
-      setStage(PROJECT_STATES.PLANNING, `Planning story arc, sequence, and narration for ${userIntent.content_type}...`, 32, 'Creative Director');
-      const { manifest, script } = this.creativeDirector.planProduction({
+      setStage(PROJECT_STATES.PLANNING, `Planning story arc, sequence, and narration for [${sourceMode}]...`, 32, 'Creative Director');
+      const { manifest, script } = await this.creativeDirector.planProduction({
         userIntent,
         projectModel,
         evidenceSummary,
@@ -177,27 +214,41 @@ class ProductionPipeline extends EventEmitter {
       projectData.artifacts.script = path.join(projectDir, 'script.json');
       projectData.manifest = manifest;
 
-      // 5. Semantic Browser & Voice Generation: EXPLORING -> RECORDING -> GENERATING
-      let targetUrl = liveUrl;
-      if (!targetUrl && localPath) {
+      // 5. Target URL Resolution: Strictly governed by Source Mode (NO SILENT DEMO FALLBACK)
+      let targetUrl = null;
+      if (sourceMode === 'DEMO') {
+        targetUrl = liveUrl || `file://${path.resolve(config.DEMO_APPS_DIR, 'saas-analytics', 'index.html')}`;
+      } else if (sourceMode === 'LIVE_URL') {
+        targetUrl = liveUrl;
+      } else if (sourceMode === 'LOCAL_APP' || sourceMode === 'REPOSITORY_EXECUTED') {
         const resolved = path.resolve(localPath);
         if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
           const indexHtml = path.join(resolved, 'index.html');
+          const publicIndex = path.join(resolved, 'public', 'index.html');
+          const srcPublicIndex = path.join(resolved, 'src', 'public', 'index.html');
+          const distIndex = path.join(resolved, 'dist', 'index.html');
           if (fs.existsSync(indexHtml)) {
             targetUrl = `file://${indexHtml}`;
+          } else if (fs.existsSync(publicIndex)) {
+            targetUrl = `file://${publicIndex}`;
+          } else if (fs.existsSync(srcPublicIndex)) {
+            targetUrl = `file://${srcPublicIndex}`;
+          } else if (fs.existsSync(distIndex)) {
+            targetUrl = `file://${distIndex}`;
           } else {
             targetUrl = `file://${resolved}`;
           }
         } else {
           targetUrl = `file://${resolved}`;
         }
-      }
-      if (!targetUrl) {
-        targetUrl = `file://${path.resolve(config.DEMO_APPS_DIR, 'saas-analytics', 'index.html')}`;
+      } else {
+        // REPOSITORY_ANALYSIS_ONLY: targetUrl remains null! No browser recording will be executed!
+        targetUrl = null;
       }
 
       // Save discovery.json (Section 24)
       const discoveryData = {
+        sourceMode,
         targetUrl,
         projectId: id,
         projectName,
@@ -240,6 +291,9 @@ class ProductionPipeline extends EventEmitter {
         // Visuals (Recording or Motion Graphic)
         const primaryVisual = scene.visuals?.[0] || {};
         if (primaryVisual.source === 'browser_recording' || scene.type === 'product_demo') {
+          if (!targetUrl) {
+            throw this.wrapError('SOURCE_EXECUTION_UNAVAILABLE', `Scene "${scene.id}" requires browser recording, but no live URL or runnable local application was provided for [${sourceMode}].`);
+          }
           setStage(PROJECT_STATES.RECORDING, `Recording semantic product interaction for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Screen Recorder');
           try {
             const recordingResult = await this.screenRecorder.recordSceneFootage({
@@ -260,7 +314,7 @@ class ProductionPipeline extends EventEmitter {
           setStage(PROJECT_STATES.GENERATING, `Rendering procedural motion graphics for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Motion Designer');
           const motionType = primaryVisual.motionType || (scene.id === 'hook' ? 'intro_cinematic' : scene.id === 'product_reveal' ? 'problem_solution_split' : 'outro_cta');
           const motionResult = await this.motionDesigner.renderMotionClip({
-            scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, visualPlan: { motionType } },
+            scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, visualPlan: { motionType }, overlay: scene.overlay },
             sourceAnalysis: projectModel,
             durationSeconds: Math.ceil(voiceResult.duration),
             resolution,

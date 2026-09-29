@@ -22,20 +22,25 @@ const evidence = evidenceEngine.classifyEvidence({
   }
 });
 
-// 3. Plan production manifest
-const manifest = creativeDirector.planProduction({
-  intent,
-  projectModel: {
-    project: 'Golden SaaS Demo',
-    purpose: 'Automated telemetry and real-time observability',
-    problem: 'Fragmented log viewing'
-  },
-  evidenceReport: evidence
+(async () => {
+  // 3. Plan production manifest
+  const manifest = await creativeDirector.planProduction({
+    intent,
+    projectModel: {
+      project: 'Golden SaaS Demo',
+      purpose: 'Automated telemetry and real-time observability',
+      problem: 'Fragmented log viewing'
+    },
+    evidenceReport: evidence
+  });
+
+  assert(manifest.scenes.length > 0, 'Must produce structured scenes');
+  assert.strictEqual(manifest.duration, 45, 'Target duration must propagate to manifest');
+  assert(manifest.scenes[0].type === 'hook', 'First scene must be hook');
+  assert(manifest.scenes[manifest.scenes.length - 1].type === 'ending', 'Last scene must be ending');
+
+  console.log('✅ Integration Test Passed: Intelligence -> Evidence -> Manifest Pipeline');
+})().catch(err => {
+  console.error('Integration test failed:', err);
+  process.exit(1);
 });
-
-assert(manifest.scenes.length > 0, 'Must produce structured scenes');
-assert.strictEqual(manifest.duration, 45, 'Target duration must propagate to manifest');
-assert(manifest.scenes[0].type === 'hook', 'First scene must be hook');
-assert(manifest.scenes[manifest.scenes.length - 1].type === 'ending', 'Last scene must be ending');
-
-console.log('✅ Integration Test Passed: Intelligence -> Evidence -> Manifest Pipeline');

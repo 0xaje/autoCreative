@@ -13,12 +13,46 @@ class Researcher {
    * Main entry point: Performs Repository analysis and Product analysis,
    * synthesizing both into the internal Project Model (project_model.json).
    */
-  async analyzeSource({ projectName, githubUrl, liveUrl, localPath, projectDir, onProgress }) {
-    ensureDir(projectDir);
-    const assetsDir = ensureDir(path.join(projectDir, 'assets'));
+  async analyzeSource({ projectName, githubUrl, liveUrl, localPath, isDemo, projectDir, onProgress }) {
+    const assetsDir = projectDir ? ensureDir(path.join(projectDir, 'assets')) : null;
+    if (projectDir) {
+      ensureDir(projectDir);
+    }
+
+    // Determine explicit, truthful source mode
+    let sourceMode = 'LIVE_URL';
+    if (isDemo || (localPath && localPath.includes('demo-apps/saas-analytics'))) {
+      sourceMode = 'DEMO';
+    } else if (liveUrl) {
+      sourceMode = 'LIVE_URL';
+    } else if (localPath) {
+      const resolved = path.resolve(localPath);
+      if (!fs.existsSync(resolved)) {
+        const err = new Error(`Local application or repository path not found: ${localPath}`);
+        err.code = 'SOURCE_UNAVAILABLE';
+        throw err;
+      }
+      const hasExecutableHtml = fs.statSync(resolved).isDirectory()
+        ? (fs.existsSync(path.join(resolved, 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'public', 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'src', 'public', 'index.html')) ||
+           fs.existsSync(path.join(resolved, 'dist', 'index.html')))
+        : resolved.endsWith('.html');
+      if (githubUrl && hasExecutableHtml) {
+        sourceMode = 'REPOSITORY_EXECUTED';
+      } else {
+        sourceMode = hasExecutableHtml ? 'LOCAL_APP' : 'REPOSITORY_ANALYSIS_ONLY';
+      }
+    } else if (githubUrl) {
+      sourceMode = 'REPOSITORY_ANALYSIS_ONLY';
+    } else {
+      const err = new Error('No valid source provided. Expected liveUrl, localPath, or githubUrl.');
+      err.code = 'SOURCE_EXECUTION_UNAVAILABLE';
+      throw err;
+    }
 
     if (onProgress) {
-      onProgress({ agent: 'Researcher', message: 'Initiating repository and live product intelligence scan...' });
+      onProgress({ agent: 'Researcher', message: `Initiating ${sourceMode} intelligence scan...` });
     }
 
     let githubData = null;
@@ -48,15 +82,18 @@ class Researcher {
       projectName,
       githubData,
       liveUrlData,
-      inputs: { githubUrl, liveUrl, localPath }
+      sourceMode,
+      inputs: { githubUrl, liveUrl, localPath, isDemo }
     });
 
     // Save project_model.json and source-analysis.json
-    fs.writeFileSync(path.join(projectDir, 'project_model.json'), JSON.stringify(projectModel, null, 2), 'utf8');
-    fs.writeFileSync(path.join(projectDir, 'source-analysis.json'), JSON.stringify(projectModel, null, 2), 'utf8');
+    if (projectDir) {
+      fs.writeFileSync(path.join(projectDir, 'project_model.json'), JSON.stringify(projectModel, null, 2), 'utf8');
+      fs.writeFileSync(path.join(projectDir, 'source-analysis.json'), JSON.stringify(projectModel, null, 2), 'utf8');
+    }
 
     if (onProgress) {
-      onProgress({ agent: 'Researcher', message: 'Project understanding model successfully built and saved.' });
+      onProgress({ agent: 'Researcher', message: `Project understanding model successfully built for [${sourceMode}].` });
     }
 
     return projectModel;
@@ -80,7 +117,17 @@ class Researcher {
       configs: []
     };
 
-    // If local directory
+    // Validate local target existence
+    if (typeof target === 'string' && !target.startsWith('http://') && !target.startsWith('https://')) {
+      const resolved = path.resolve(target);
+      if (!fs.existsSync(resolved)) {
+        const err = new Error(`Local application or repository path not found: ${target}`);
+        err.code = 'SOURCE_UNAVAILABLE';
+        throw err;
+      }
+    }
+
+    // If local directory or file
     if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
       data.name = path.basename(target);
 
@@ -192,14 +239,14 @@ class Researcher {
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 }).catch(() => {
-        return page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
       // Capture Hero Screenshot
-      const heroPath = path.join(assetsDir, 'hero-landing.png');
-      await page.screenshot({ path: heroPath, type: 'png' });
-      data.heroScreenshot = heroPath;
+      if (assetsDir) {
+        const heroPath = path.join(assetsDir, 'hero-landing.png');
+        await page.screenshot({ path: heroPath, type: 'png' });
+        data.heroScreenshot = heroPath;
+      }
 
       // Extract semantic DOM structure & discover primary workflows
       const extracted = await page.evaluate(() => {
@@ -266,10 +313,13 @@ class Researcher {
 
       Object.assign(data, extracted);
     } catch (err) {
-      console.warn('Researcher live URL crawl warning:', err.message);
-      data.crawlError = err.message;
+      if (browser) await browser.close().catch(() => {});
+      const unreachErr = new Error(`Cannot reach live application at ${url}: ${err.message}`);
+      unreachErr.code = 'LIVE_APP_UNREACHABLE';
+      unreachErr.details = err.message;
+      throw unreachErr;
     } finally {
-      if (browser) await browser.close();
+      if (browser) await browser.close().catch(() => {});
     }
 
     return data;
@@ -314,10 +364,10 @@ class Researcher {
   /**
    * Synthesize data into the exact PRD Project Understanding Model
    */
-  buildProjectModel({ projectName, githubData, liveUrlData, inputs }) {
+  buildProjectModel({ projectName, githubData, liveUrlData, sourceMode, inputs }) {
     let name = projectName || '';
     let purpose = '';
-    let problem = 'Fragmented tools and slow manual workflows reduce engineering velocity.';
+    let problem = '';
     let targetUser = 'Developers, technical founders, and product teams';
 
     if (liveUrlData && liveUrlData.title) {
@@ -334,31 +384,19 @@ class Researcher {
       purpose = githubData.description;
     }
 
-    if (!name) name = 'Autonomous Product';
-    if (!purpose) purpose = 'Autonomous intelligence platform designed for modern workflows';
+    if (!name) name = 'Project Workspace';
+    if (!purpose) purpose = (githubData && githubData.readmeContent) ? githubData.readmeContent.slice(0, 120).trim() : 'Software project architecture';
+    if (!problem) problem = 'Complex workflows require automated, dependable tools.';
 
-    // Collect all features
+    // Collect genuine features from real data
     const allFeatures = Array.from(new Set([
-      ...(githubData ? githubData.features : []),
-      ...(liveUrlData ? (liveUrlData.headings || []).filter(h => h.length > 10 && h !== purpose) : [])
+      ...(githubData ? (githubData.features || []) : []),
+      ...(liveUrlData ? (liveUrlData.headings || []).filter(h => h.length > 5 && h !== purpose) : [])
     ])).slice(0, 6);
 
     const workflows = (liveUrlData?.workflows && liveUrlData.workflows.length > 0)
       ? liveUrlData.workflows
-      : [
-          {
-            id: 'telemetry_overview',
-            name: 'Live Telemetry Exploration',
-            targetSelector: '#nav-analytics',
-            description: 'Explores real-time metrics and verifies interactive controls'
-          },
-          {
-            id: 'stream_deploy',
-            name: 'Stream Deployment Action',
-            targetSelector: '#btn-deploy',
-            description: 'Deploys event stream and observes state transition'
-          }
-        ];
+      : [];
 
     return {
       project: name,
@@ -367,15 +405,11 @@ class Researcher {
       tagline: purpose,
       target_user: targetUser,
       problem,
-      features: allFeatures.length > 0 ? allFeatures : [
-        'Real-time automated workflow',
-        'Intuitive modern interface',
-        'Intelligent data synchronization',
-        'Production-grade reliability'
-      ],
+      features: allFeatures,
       workflows,
-      integrations: githubData?.detectedTech || ['JavaScript', 'Node.js', 'Modern Web'],
+      integrations: githubData?.detectedTech || [],
       evidence: [],
+      sourceMode: sourceMode || 'LIVE_URL',
       inputs,
       liveData: liveUrlData,
       githubData,

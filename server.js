@@ -84,9 +84,9 @@ app.get('/api/projects/:id', (req, res) => {
 // API: Start new video production
 app.post('/api/projects', async (req, res) => {
   try {
-    const { githubUrl, liveUrl, localPath, prompt, mode, duration, aspectRatio, voiceId, musicStyle } = req.body;
+    const { githubUrl, liveUrl, localPath, isDemo, prompt, mode, duration, aspectRatio, voiceId, musicStyle } = req.body;
 
-    if (!githubUrl && !liveUrl && !localPath) {
+    if (!githubUrl && !liveUrl && !localPath && !isDemo) {
       return res.status(400).json({ error: 'At least one of GitHub repository URL, Live URL, or local path is required.' });
     }
 
@@ -111,6 +111,7 @@ app.post('/api/projects', async (req, res) => {
       githubUrl,
       liveUrl,
       localPath,
+      isDemo: Boolean(isDemo),
       prompt,
       mode,
       duration,
@@ -298,34 +299,6 @@ app.post('/api/projects/:id/regenerate', async (req, res) => {
   }
 });
 
-// API: Step-by-step pipeline endpoints (Section 22)
-app.post('/api/projects/:id/analyze', async (req, res) => {
-  res.json({ success: true, message: 'Source analysis stage' });
-});
-
-app.post('/api/projects/:id/plan', async (req, res) => {
-  res.json({ success: true, message: 'Creative planning stage' });
-});
-
-app.post('/api/projects/:id/explore', async (req, res) => {
-  res.json({ success: true, message: 'Browser exploration stage' });
-});
-
-app.post('/api/projects/:id/record', async (req, res) => {
-  res.json({ success: true, message: 'Browser recording stage' });
-});
-
-app.post('/api/projects/:id/generate', async (req, res) => {
-  res.json({ success: true, message: 'Voice and music generation stage' });
-});
-
-app.post('/api/projects/:id/render', async (req, res) => {
-  res.json({ success: true, message: 'Video rendering stage' });
-});
-
-app.post('/api/projects/:id/qc', async (req, res) => {
-  res.json({ success: true, message: 'Quality control stage' });
-});
 
 // API: Stream video with range support
 app.get('/api/projects/:id/video', (req, res) => {
