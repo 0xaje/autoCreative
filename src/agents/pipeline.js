@@ -360,6 +360,7 @@ class ProductionPipeline extends EventEmitter {
 
       projectData.artifacts.qcReport = path.join(projectDir, 'qc-report.json');
       projectData.qc = qcReport;
+      projectData.qcReport = qcReport;
 
       // 9. Completed
       projectData.status = PROJECT_STATES.COMPLETED;
@@ -536,6 +537,7 @@ class ProductionPipeline extends EventEmitter {
       sizeBytes: renderResult.sizeBytes
     };
     projectData.qc = qcReport;
+    projectData.qcReport = qcReport;
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     fs.writeFileSync(projectJsonPath, JSON.stringify(projectData, null, 2), 'utf8');
 
