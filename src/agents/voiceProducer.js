@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
 const config = require('../config');
 const { ensureDir, getVideoMetadata } = require('../utils/ffmpegHelper');
+const { VoiceProviderFactory } = require('../providers/voiceProvider');
 
 class VoiceProducer {
   constructor(options = {}) {
@@ -12,7 +12,7 @@ class VoiceProducer {
   /**
    * Produce narration audio and synchronized subtitles for an individual scene
    */
-  async produceSceneVoice({ scene, voiceId, projectDir, onProgress }) {
+  async produceSceneVoice({ scene, voiceId, provider = 'edge-tts', projectDir, onProgress }) {
     const audioDir = ensureDir(path.join(projectDir, 'audio'));
     const voice = voiceId || config.DEFAULT_SPECS.defaultVoice;
     const mediaOut = path.join(audioDir, `${scene.id}-voice.mp3`);
@@ -21,7 +21,7 @@ class VoiceProducer {
     if (onProgress) {
       onProgress({
         agent: 'Voice Producer',
-        message: `Synthesizing neural voice for "${scene.title}" with voice ${voice}...`
+        message: `Synthesizing neural voice for "${scene.title}" with voice ${voice} (${provider})...`
       });
     }
 
@@ -30,15 +30,14 @@ class VoiceProducer {
       throw new Error(`Scene ${scene.id} has empty narration text`);
     }
 
-    // Call edge-tts
-    await this.callEdgeTts({
+    const voiceProvider = VoiceProviderFactory.getProvider(provider);
+    await voiceProvider.synthesize({
       text: cleanText,
-      voice,
+      voiceId: voice,
       mediaOut,
       subOut
     });
 
-    // Probe duration
     const meta = await getVideoMetadata(mediaOut);
     const subtitles = this.parseVtt(subOut);
 
@@ -48,38 +47,6 @@ class VoiceProducer {
       duration: meta.duration || scene.targetDuration || 5,
       subtitles
     };
-  }
-
-  /**
-   * Execute edge-tts CLI command
-   */
-  callEdgeTts({ text, voice, mediaOut, subOut }) {
-    return new Promise((resolve, reject) => {
-      const args = [
-        '--voice', voice,
-        '--text', text,
-        '--write-media', mediaOut,
-        '--write-subtitles', subOut
-      ];
-
-      const proc = spawn('edge-tts', args);
-      let stderr = '';
-
-      proc.stderr.on('data', d => stderr += d.toString());
-
-      proc.on('close', (code) => {
-        if (code === 0 && fs.existsSync(mediaOut)) {
-          resolve();
-        } else {
-          // If edge-tts failed or network issue, fallback to ffmpeg speech synthesis / tone
-          reject(new Error(`edge-tts failed with code ${code}: ${stderr}`));
-        }
-      });
-
-      proc.on('error', (err) => {
-        reject(new Error(`Failed to spawn edge-tts: ${err.message}`));
-      });
-    });
   }
 
   /**

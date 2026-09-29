@@ -36,7 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const scriptContainer = document.getElementById('script-container');
   const evidenceStatsPills = document.getElementById('evidence-stats-pills');
 
-  // Modal Elements
+  // Natural Language Regeneration Elements (PRD Section 16)
+  const regenIntentForm = document.getElementById('regen-intent-form');
+  const inputRegenPrompt = document.getElementById('input-regen-prompt');
+  const btnRegenSubmit = document.getElementById('btn-regen-submit');
+  const regenChips = document.querySelectorAll('.regen-chip');
+
+  // Project Model Elements (PRD Section 3)
+  const modelProjectName = document.getElementById('model-project-name');
+  const modelPurpose = document.getElementById('model-purpose');
+  const modelTargetUser = document.getElementById('model-target-user');
+  const modelProblem = document.getElementById('model-problem');
+  const modelFeaturesList = document.getElementById('model-features-list');
+  const modelWorkflowsList = document.getElementById('model-workflows-list');
+
+  // Artifact Modal Elements
+  const artifactModal = document.getElementById('artifact-modal');
+  const btnCloseArtModal = document.getElementById('btn-close-art-modal');
+  const btnCloseArtFooter = document.getElementById('btn-close-art-footer');
+  const artifactModalTitle = document.getElementById('artifact-modal-title');
+  const artifactCodeContent = document.getElementById('artifact-code-content');
+
+  // Modal Elements (Selective Scene Regeneration)
   const regenModal = document.getElementById('regen-modal');
   const btnCloseModal = document.getElementById('btn-close-modal');
   const btnCancelModal = document.getElementById('btn-cancel-modal');
@@ -102,10 +123,26 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentProjectId && projectId !== currentProjectId) return;
 
       onSceneRegenerated(sceneIndex, result);
+    } else if (msg.event === 'intent_regenerated') {
+      const { projectId, userRequest, result } = msg.data;
+      if (currentProjectId && projectId !== currentProjectId) return;
+
+      if (btnRegenSubmit) {
+        btnRegenSubmit.disabled = false;
+        btnRegenSubmit.textContent = 'Regenerate Video';
+      }
+
+      currentProjectData = result.projectData;
+      onProductionCompleted(currentProjectData);
+      alert(`🎬 Studio Natural Language Regeneration Complete!\n\nApplied request: "${userRequest}"\nAll scenes, voice, audio ducking, and visual assets updated without re-analyzing repository.`);
     } else if (msg.event === 'error') {
       alert(`Pipeline Notification: ${msg.data.error || 'Operation failed'}`);
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
+      if (btnRegenSubmit) {
+        btnRegenSubmit.disabled = false;
+        btnRegenSubmit.textContent = 'Regenerate Video';
+      }
     }
   }
 
@@ -226,6 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render Timeline & Scenes
     renderTimelineScenes(projectData.manifest?.scenes || []);
 
+    // Render Project Model (PRD Section 3)
+    renderProjectModel(projectData.id);
+
     // Render Evidence
     renderEvidence(projectData.evidenceSummary, projectData.id);
 
@@ -323,6 +363,47 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>
       `).join('');
     } catch (e) {}
+  }
+
+  // Render Project Model (PRD Section 3)
+  async function renderProjectModel(projectId) {
+    if (!projectId) return;
+
+    try {
+      const res = await fetch(`/projects/${projectId}/project_model.json`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (modelProjectName) modelProjectName.textContent = data.project || 'Active Project';
+      if (modelPurpose) modelPurpose.textContent = data.purpose || 'Autonomous software solution';
+      if (modelTargetUser) modelTargetUser.textContent = data.target_user || 'Developers and technical teams';
+      if (modelProblem) modelProblem.textContent = data.problem || 'Fragmented workflows and lack of real-time visibility';
+
+      if (modelFeaturesList) {
+        if (data.features && data.features.length > 0) {
+          modelFeaturesList.innerHTML = data.features.map(f =>
+            `<span class="feature-tag-badge">${f}</span>`
+          ).join('');
+        } else {
+          modelFeaturesList.innerHTML = '<span class="empty-cell">No explicit features listed.</span>';
+        }
+      }
+
+      if (modelWorkflowsList) {
+        if (data.workflows && data.workflows.length > 0) {
+          modelWorkflowsList.innerHTML = data.workflows.map(w => `
+            <div class="workflow-item-row">
+              <span class="workflow-item-name">${w.name || w.id || 'Interactive Workflow'}</span>
+              <span class="workflow-item-action">${w.action || w.target || 'CDP Browser Exploration'}</span>
+            </div>
+          `).join('');
+        } else {
+          modelWorkflowsList.innerHTML = '<span class="empty-cell">Autonomous workflow discovery logged during browser exploration.</span>';
+        }
+      }
+    } catch (e) {
+      console.error('Error loading project model:', e);
+    }
   }
 
   // Render Script View
@@ -446,6 +527,110 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Start WebSocket
+  // Natural Language Regeneration Chips (PRD Section 16)
+  if (regenChips) {
+    regenChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        if (inputRegenPrompt) {
+          inputRegenPrompt.value = chip.dataset.prompt;
+          inputRegenPrompt.focus();
+        }
+      });
+    });
+  }
+
+  // Natural Language Regeneration Form Submission (PRD Section 16)
+  if (regenIntentForm) {
+    regenIntentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentProjectId) {
+        alert('Please produce or load a video project first.');
+        return;
+      }
+
+      const prompt = inputRegenPrompt.value.trim();
+      if (!prompt) return;
+
+      btnRegenSubmit.disabled = true;
+      btnRegenSubmit.textContent = 'REGENERATING (AUTONOMOUS)...';
+
+      try {
+        const res = await fetch(`/api/projects/${currentProjectId}/regenerate-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userRequest: prompt })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to start regeneration');
+
+        updateProgress(15, 'Creative Director', `Natural language regeneration initiated: "${prompt}"`);
+      } catch (err) {
+        alert(`Regeneration Error: ${err.message}`);
+        btnRegenSubmit.disabled = false;
+        btnRegenSubmit.textContent = 'Regenerate Video';
+      }
+    });
+  }
+
+  // Artifact Cards Click to View Raw Content
+  document.querySelectorAll('.artifact-card').forEach(card => {
+    card.addEventListener('click', async () => {
+      const fileName = card.dataset.file;
+      if (!fileName) return;
+
+      if (!currentProjectId) {
+        alert('Run a production project first to inspect artifacts.');
+        return;
+      }
+
+      artifactModalTitle.textContent = fileName;
+      artifactCodeContent.textContent = 'Loading artifact content...';
+      artifactModal.classList.add('active');
+
+      try {
+        const res = await fetch(`/api/projects/${currentProjectId}/artifacts/${fileName}`);
+        if (!res.ok) throw new Error(`Artifact ${fileName} not found on server.`);
+        const text = await res.text();
+        try {
+          const parsed = JSON.parse(text);
+          artifactCodeContent.textContent = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          artifactCodeContent.textContent = text;
+        }
+      } catch (err) {
+        artifactCodeContent.textContent = `Error loading artifact: ${err.message}`;
+      }
+    });
+  });
+
+  // Artifact Modal Close
+  function closeArtModal() {
+    if (artifactModal) artifactModal.classList.remove('active');
+  }
+  if (btnCloseArtModal) btnCloseArtModal.addEventListener('click', closeArtModal);
+  if (btnCloseArtFooter) btnCloseArtFooter.addEventListener('click', closeArtModal);
+
+  // Load Latest Existing Project on Startup
+  async function loadLatestProject() {
+    try {
+      const res = await fetch('/api/projects');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.projects && data.projects.length > 0) {
+        const latest = data.projects[0];
+        if (latest.status === 'COMPLETED' || latest.finalVideo) {
+          currentProjectId = latest.id;
+          currentProjectData = latest;
+          onProductionCompleted(latest);
+        }
+      }
+    } catch (e) {
+      console.log('No prior projects loaded:', e);
+    }
+  }
+
+  // Start WebSocket and load initial state
   connectWebSocket();
+  loadLatestProject();
 });

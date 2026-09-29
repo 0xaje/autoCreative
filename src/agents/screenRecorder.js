@@ -14,11 +14,12 @@ class ScreenRecorder {
   }
 
   /**
-   * Record real product footage for a given scene
+   * Record real product footage for a given scene, saving MP4 video and PRD metadata JSON
    */
-  async recordSceneFootage({ scene, targetUrl, durationSeconds, resolution, projectDir, onProgress }) {
+  async recordSceneFootage({ scene, targetUrl, durationSeconds, resolution, projectModel, projectDir, onProgress }) {
     const recordingsDir = ensureDir(path.join(projectDir, 'recordings'));
     const outputPath = path.join(recordingsDir, `${scene.id}.mp4`);
+    const metadataPath = path.join(recordingsDir, `${scene.id}.json`);
 
     const width = resolution?.width || 1920;
     const height = resolution?.height || 1080;
@@ -33,6 +34,7 @@ class ScreenRecorder {
 
     let browser = null;
     let ffmpegProc = null;
+    const startTime = new Date().toISOString();
 
     try {
       browser = await puppeteer.launch({
@@ -50,7 +52,7 @@ class ScreenRecorder {
       const page = await browser.newPage();
       await page.setViewport({ width, height, deviceScaleFactor: 1 });
 
-      // Navigate to live URL or demo
+      // Navigate to live URL or demo with fallback
       await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 25000 }).catch(() => {
         return page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
       });
@@ -113,9 +115,9 @@ class ScreenRecorder {
 
       client.on('Page.screencastFrame', frameHandler);
 
-      // Execute autonomous interaction sequence
-      const actions = this.demonstrator.planInteraction(scene, { liveData: {} });
-      await this.demonstrator.executeSequence(page, actions, duration);
+      // Execute semantic interaction sequence using discovered project workflows
+      const actions = this.demonstrator.planInteraction(scene, projectModel || { workflows: [] });
+      const actionLogs = await this.demonstrator.executeSequence(page, actions, duration);
 
       // Stop screencast cleanly
       isRecording = false;
@@ -137,6 +139,19 @@ class ScreenRecorder {
       browser = null;
 
       const meta = await getVideoMetadata(outputPath);
+
+      // Save PRD recording metadata JSON
+      const recordingMetadata = {
+        id: scene.id,
+        url: targetUrl,
+        start_time: startTime,
+        duration: meta.duration,
+        actions: actionLogs,
+        success: true,
+        file: `recordings/${path.basename(outputPath)}`
+      };
+      fs.writeFileSync(metadataPath, JSON.stringify(recordingMetadata, null, 2), 'utf8');
+
       if (onProgress) {
         onProgress({
           agent: 'Screen Recorder',
@@ -146,6 +161,7 @@ class ScreenRecorder {
 
       return {
         outputPath,
+        metadataPath,
         duration: meta.duration,
         width: meta.width,
         height: meta.height

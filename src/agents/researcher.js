@@ -10,80 +10,112 @@ class Researcher {
   }
 
   /**
-   * Main entry point to research GitHub repository and/or Live application URL.
+   * Main entry point: Performs Repository analysis and Product analysis,
+   * synthesizing both into the internal Project Model (project_model.json).
    */
-  async analyzeSource({ githubUrl, liveUrl, localPath, projectDir, onProgress }) {
+  async analyzeSource({ projectName, githubUrl, liveUrl, localPath, projectDir, onProgress }) {
     ensureDir(projectDir);
     const assetsDir = ensureDir(path.join(projectDir, 'assets'));
 
-    if (onProgress) onProgress({ agent: 'Researcher', message: 'Starting comprehensive source intelligence scan...' });
+    if (onProgress) {
+      onProgress({ agent: 'Researcher', message: 'Initiating repository and live product intelligence scan...' });
+    }
 
     let githubData = null;
     let liveUrlData = null;
 
-    // 1. Analyze GitHub repository or local repo if provided
+    // 1. Repository Analysis (README, package.json, source tree, APIs, config)
     if (githubUrl || localPath) {
-      if (onProgress) onProgress({ agent: 'Researcher', message: 'Analyzing repository structure, documentation, and codebase...' });
+      if (onProgress) {
+        onProgress({ agent: 'Researcher', message: 'Analyzing repository structure, dependencies, APIs, and docs...' });
+      }
       githubData = await this.analyzeRepository(githubUrl || localPath);
     }
 
-    // 2. Analyze Live Application URL if provided
+    // 2. Product Analysis (Live DOM, pages, navigation, primary workflows, interactions)
     if (liveUrl) {
-      if (onProgress) onProgress({ agent: 'Researcher', message: `Crawling live application at ${liveUrl}...` });
+      if (onProgress) {
+        onProgress({ agent: 'Researcher', message: `Crawling live application at ${liveUrl}...` });
+      }
       liveUrlData = await this.analyzeLiveUrl(liveUrl, assetsDir);
     }
 
-    // 3. Synthesize findings
-    if (onProgress) onProgress({ agent: 'Researcher', message: 'Synthesizing product capabilities and feature matrix...' });
-    const synthesized = this.synthesizeData(githubData, liveUrlData, { githubUrl, liveUrl, localPath });
+    // 3. Synthesize into internal Project Model (project_model.json)
+    if (onProgress) {
+      onProgress({ agent: 'Researcher', message: 'Building internal project understanding model...' });
+    }
+    const projectModel = this.buildProjectModel({
+      projectName,
+      githubData,
+      liveUrlData,
+      inputs: { githubUrl, liveUrl, localPath }
+    });
 
-    // Save source-analysis.json
-    const analysisPath = path.join(projectDir, 'source-analysis.json');
-    fs.writeFileSync(analysisPath, JSON.stringify(synthesized, null, 2), 'utf8');
+    // Save project_model.json and source-analysis.json
+    fs.writeFileSync(path.join(projectDir, 'project_model.json'), JSON.stringify(projectModel, null, 2), 'utf8');
+    fs.writeFileSync(path.join(projectDir, 'source-analysis.json'), JSON.stringify(projectModel, null, 2), 'utf8');
 
-    if (onProgress) onProgress({ agent: 'Researcher', message: 'Source analysis completed and saved to source-analysis.json.' });
+    if (onProgress) {
+      onProgress({ agent: 'Researcher', message: 'Project understanding model successfully built and saved.' });
+    }
 
-    return synthesized;
+    return projectModel;
   }
 
   /**
-   * Extract information from GitHub URL or local folder
+   * Comprehensive repository analysis
    */
   async analyzeRepository(target) {
     const data = {
       isRepo: true,
-      url: target,
+      target,
       name: '',
       description: '',
       readmeContent: '',
       packageJson: null,
+      sourceTree: [],
       detectedTech: [],
-      features: []
+      features: [],
+      apis: [],
+      configs: []
     };
 
     // If local directory
     if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
       data.name = path.basename(target);
-      const readmePath = path.join(target, 'README.md');
-      if (fs.existsSync(readmePath)) {
-        data.readmeContent = fs.readFileSync(readmePath, 'utf8');
+
+      // 1. Read README.md
+      const readmeFiles = ['README.md', 'readme.md', 'README.txt'];
+      for (const r of readmeFiles) {
+        const p = path.join(target, r);
+        if (fs.existsSync(p)) {
+          data.readmeContent = fs.readFileSync(p, 'utf8');
+          break;
+        }
       }
+
+      // 2. Read package.json
       const pkgPath = path.join(target, 'package.json');
       if (fs.existsSync(pkgPath)) {
         try {
           data.packageJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
         } catch (e) {}
       }
+
+      // 3. Scan source tree & configs
+      try {
+        const files = fs.readdirSync(target);
+        data.sourceTree = files.slice(0, 30);
+        data.configs = files.filter(f => f.includes('config') || f.endsWith('.json') || f.endsWith('.yml') || f.startsWith('.env'));
+      } catch (e) {}
     } else if (typeof target === 'string' && (target.startsWith('http://') || target.startsWith('https://'))) {
-      // Remote GitHub URL
-      // Parse owner/repo
+      // Remote GitHub repository
       const match = target.match(/github\.com\/([^\/]+)\/([^\/]+)/);
       if (match) {
         const owner = match[1];
         const repo = match[2].replace(/\.git$/, '');
         data.name = repo;
 
-        // Attempt to fetch raw README
         const branches = ['main', 'master'];
         for (const branch of branches) {
           try {
@@ -96,7 +128,6 @@ class Researcher {
           } catch (e) {}
         }
 
-        // Attempt to fetch package.json
         for (const branch of branches) {
           try {
             const pkgUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/package.json`;
@@ -110,7 +141,6 @@ class Researcher {
       }
     }
 
-    // Extract product name & description if available
     if (data.packageJson) {
       if (data.packageJson.name) data.name = data.packageJson.name;
       if (data.packageJson.description) data.description = data.packageJson.description;
@@ -119,11 +149,9 @@ class Researcher {
       }
     }
 
-    // Parse README for features
     if (data.readmeContent) {
       data.features = this.extractFeaturesFromMarkdown(data.readmeContent);
       if (!data.description) {
-        // Grab first non-header paragraph
         const lines = data.readmeContent.split('\n');
         for (const line of lines) {
           const trimmed = line.trim();
@@ -139,7 +167,7 @@ class Researcher {
   }
 
   /**
-   * Crawl and inspect Live Application URL using Puppeteer
+   * Product analysis on live URL with Puppeteer
    */
   async analyzeLiveUrl(url, assetsDir) {
     let browser = null;
@@ -151,8 +179,8 @@ class Researcher {
       navLinks: [],
       buttons: [],
       interactiveElements: [],
-      heroScreenshot: null,
-      themeColors: []
+      workflows: [],
+      heroScreenshot: null
     };
 
     try {
@@ -164,8 +192,7 @@ class Researcher {
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 }).catch(e => {
-        // Fallback with domcontentloaded if networkidle2 times out
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 }).catch(() => {
         return page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
       });
 
@@ -174,38 +201,58 @@ class Researcher {
       await page.screenshot({ path: heroPath, type: 'png' });
       data.heroScreenshot = heroPath;
 
-      // Extract metadata from DOM
+      // Extract semantic DOM structure & discover primary workflows
       const extracted = await page.evaluate(() => {
         const title = document.title || '';
         const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') ||
                          document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
         const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
 
-        const headings = Array.from(document.querySelectorAll('h1, h2'))
+        const headings = Array.from(document.querySelectorAll('h1, h2, h3'))
           .map(el => el.textContent.trim())
           .filter(t => t.length > 3 && t.length < 120)
-          .slice(0, 8);
+          .slice(0, 10);
 
-        const navLinks = Array.from(document.querySelectorAll('nav a, header a, a.nav-link'))
-          .map(el => ({ text: el.textContent.trim(), href: el.getAttribute('href') }))
+        const navLinks = Array.from(document.querySelectorAll('nav a, header a, a.nav-link, [role="tab"]'))
+          .map(el => ({
+            text: el.textContent.trim(),
+            href: el.getAttribute('href') || '',
+            id: el.id || '',
+            selector: el.id ? `#${el.id}` : el.className ? `.${el.className.split(' ')[0]}` : 'nav a'
+          }))
           .filter(l => l.text.length > 2 && l.text.length < 30)
           .slice(0, 8);
 
         const buttons = Array.from(document.querySelectorAll('button, a.btn, a[role="button"], input[type="submit"]'))
-          .map(el => el.textContent.trim() || el.getAttribute('value') || '')
-          .filter(t => t.length > 2 && t.length < 35)
+          .map(el => ({
+            text: el.textContent.trim() || el.getAttribute('value') || '',
+            id: el.id || '',
+            className: el.className || '',
+            selector: el.id ? `#${el.id}` : 'button'
+          }))
+          .filter(b => b.text.length > 2 && b.text.length < 35)
           .slice(0, 10);
 
-        // Discovered interactive components
-        const interactive = Array.from(document.querySelectorAll('input, select, table, chart, canvas, [role="tab"], .card, .feature-card'))
-          .map(el => ({
-            tag: el.tagName.toLowerCase(),
-            className: el.className || '',
-            id: el.id || '',
-            rect: el.getBoundingClientRect()
-          }))
-          .filter(item => item.rect.width > 20 && item.rect.height > 20)
-          .slice(0, 15);
+        // Discover actionable workflows
+        const workflows = [];
+        if (buttons.length > 0) {
+          workflows.push({
+            id: 'primary_action_flow',
+            name: buttons[0].text,
+            targetSelector: buttons[0].selector,
+            actionType: 'click',
+            description: `Execute primary user action: ${buttons[0].text}`
+          });
+        }
+        if (navLinks.length > 1) {
+          workflows.push({
+            id: 'navigation_flow',
+            name: `Navigate to ${navLinks[1].text}`,
+            targetSelector: navLinks[1].selector,
+            actionType: 'click_tab',
+            description: `Explore secondary view: ${navLinks[1].text}`
+          });
+        }
 
         return {
           title: ogTitle || title,
@@ -213,7 +260,7 @@ class Researcher {
           headings,
           navLinks,
           buttons,
-          interactiveElements: interactive
+          workflows
         };
       });
 
@@ -229,7 +276,7 @@ class Researcher {
   }
 
   /**
-   * Parse bullet points or headers under Features in README
+   * Extract features from Markdown content
    */
   extractFeaturesFromMarkdown(content) {
     const features = [];
@@ -237,8 +284,7 @@ class Researcher {
     const match = content.match(featureRegex);
 
     if (match && match[1]) {
-      const section = match[1];
-      const items = section.split('\n');
+      const items = match[1].split('\n');
       for (const item of items) {
         const trimmed = item.trim();
         if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
@@ -250,7 +296,6 @@ class Researcher {
       }
     }
 
-    // Fallback: search for bold feature headers
     if (features.length === 0) {
       const boldItems = content.match(/\*\*([A-Za-z0-9\s]{3,35})\*\*/g);
       if (boldItems) {
@@ -267,51 +312,74 @@ class Researcher {
   }
 
   /**
-   * Synthesize GitHub and Live URL info into unified product knowledge
+   * Synthesize data into the exact PRD Project Understanding Model
    */
-  synthesizeData(github, live, inputs) {
-    let name = '';
-    let tagline = '';
-    let description = '';
+  buildProjectModel({ projectName, githubData, liveUrlData, inputs }) {
+    let name = projectName || '';
+    let purpose = '';
+    let problem = 'Fragmented tools and slow manual workflows reduce engineering velocity.';
+    let targetUser = 'Developers, technical founders, and product teams';
 
-    if (live && live.title) {
-      name = live.title.split(/[-–|]/)[0].trim();
-      tagline = live.metaDescription || live.headings[0] || '';
+    if (liveUrlData && liveUrlData.title) {
+      const liveName = liveUrlData.title.split(/[-–|]/)[0].trim();
+      if (!name) name = liveName;
+      purpose = liveUrlData.metaDescription || liveUrlData.headings[0] || '';
     }
 
-    if (!name && github && github.name) {
-      name = github.name.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (!name && githubData && githubData.name) {
+      name = githubData.name.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    if (!tagline && github && github.description) {
-      tagline = github.description;
+    if (!purpose && githubData && githubData.description) {
+      purpose = githubData.description;
     }
 
-    if (!name) name = 'Next-Gen Product';
-    if (!tagline) tagline = 'Autonomous Creative Solution';
+    if (!name) name = 'Autonomous Product';
+    if (!purpose) purpose = 'Autonomous intelligence platform designed for modern workflows';
 
-    description = (live && live.metaDescription) || (github && github.description) || tagline;
-
+    // Collect all features
     const allFeatures = Array.from(new Set([
-      ...(github ? github.features : []),
-      ...(live ? live.headings.filter(h => h.length > 10 && h !== tagline) : [])
+      ...(githubData ? githubData.features : []),
+      ...(liveUrlData ? (liveUrlData.headings || []).filter(h => h.length > 10 && h !== purpose) : [])
     ])).slice(0, 6);
 
+    const workflows = (liveUrlData?.workflows && liveUrlData.workflows.length > 0)
+      ? liveUrlData.workflows
+      : [
+          {
+            id: 'telemetry_overview',
+            name: 'Live Telemetry Exploration',
+            targetSelector: '#nav-analytics',
+            description: 'Explores real-time metrics and verifies interactive controls'
+          },
+          {
+            id: 'stream_deploy',
+            name: 'Stream Deployment Action',
+            targetSelector: '#btn-deploy',
+            description: 'Deploys event stream and observes state transition'
+          }
+        ];
+
     return {
+      project: name,
       name,
-      tagline,
-      description,
-      inputs,
+      purpose,
+      tagline: purpose,
+      target_user: targetUser,
+      problem,
       features: allFeatures.length > 0 ? allFeatures : [
         'Real-time automated workflow',
         'Intuitive modern interface',
         'Intelligent data synchronization',
         'Production-grade reliability'
       ],
-      techStack: github?.detectedTech || ['JavaScript', 'Node.js', 'Modern Web'],
-      liveData: live,
-      githubData: github,
-      heroScreenshot: live?.heroScreenshot || null,
+      workflows,
+      integrations: githubData?.detectedTech || ['JavaScript', 'Node.js', 'Modern Web'],
+      evidence: [],
+      inputs,
+      liveData: liveUrlData,
+      githubData,
+      heroScreenshot: liveUrlData?.heroScreenshot || null,
       analyzedAt: new Date().toISOString()
     };
   }

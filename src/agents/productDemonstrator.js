@@ -1,6 +1,7 @@
 /**
- * Product Demonstrator Agent
- * Plans and coordinates autonomous user interactions across the live application.
+ * Semantic Browser Demonstrator Agent
+ * Executes resilient, semantic user interactions (by button text, role, label, placeholder)
+ * with graceful recovery from failed interactions.
  */
 class ProductDemonstrator {
   constructor(options = {}) {
@@ -8,140 +9,161 @@ class ProductDemonstrator {
   }
 
   /**
-   * Generate an actionable interaction sequence for a specific scene
+   * Plan semantic action sequence based on scene purpose and discovered workflows
    */
   planInteraction(scene, sourceAnalysis) {
-    const liveData = sourceAnalysis.liveData || {};
+    const workflows = sourceAnalysis.workflows || [];
     const interactionType = scene.visualPlan?.interaction || 'explore_primary_feature';
-
     const actions = [];
 
-    if (interactionType === 'explore_primary_feature') {
-      // Step 1: Initial focus on hero area
-      actions.push({ type: 'move', x: 600, y: 350, duration: 600 });
-      actions.push({ type: 'wait', duration: 400 });
+    // Lead-in time
+    actions.push({ type: 'wait', duration: 500, label: 'Lead-in observation' });
 
-      // Step 2: Highlight first action button or nav link
+    if (interactionType === 'explore_primary_feature') {
+      // Prioritize semantic button or primary action
+      const primaryWf = workflows[0];
+
+      // 1. Move to and highlight primary interactive element
       actions.push({
-        type: 'highlight_selector',
-        selector: 'button.btn-primary, button, nav a:first-of-type, .hero-cta',
-        label: scene.overlay?.lowerThird?.title || 'Interactive Feature',
+        type: 'semantic_highlight',
+        semanticQuery: {
+          roles: ['button', 'link'],
+          textHints: [primaryWf?.name, 'Deploy', 'Start', 'Explore', 'Overview', 'Dashboard'],
+          fallbackSelector: 'button.btn-primary, button, nav a:first-of-type'
+        },
+        label: scene.overlay?.lowerThird?.title || 'Interactive Control',
         duration: 1200
       });
 
-      // Step 3: Click and trigger interaction
+      // 2. Click the primary semantic target
       actions.push({
-        type: 'click_selector',
-        selector: 'button.btn-primary, button, nav a:first-of-type, .hero-cta',
-        duration: 500
+        type: 'semantic_click',
+        semanticQuery: {
+          roles: ['button', 'link'],
+          textHints: [primaryWf?.name, 'Deploy', 'Start', 'Explore', 'Overview'],
+          fallbackSelector: 'button.btn-primary, button, nav a:first-of-type'
+        },
+        duration: 600
       });
 
-      // Step 4: Smooth scroll down to view content
-      actions.push({ type: 'scroll', y: 450, duration: 900 });
-      actions.push({ type: 'wait', duration: 800 });
+      // 3. Smooth scroll through content
+      actions.push({ type: 'scroll', y: 400, duration: 800, label: 'Scroll to metrics' });
+      actions.push({ type: 'wait', duration: 600 });
 
-      // Step 5: Highlight card or metric
+      // 4. Highlight live telemetry card
       actions.push({
-        type: 'highlight_selector',
-        selector: '.card, .feature-card, .metric, table',
-        label: 'Real-time System Status',
+        type: 'semantic_highlight',
+        semanticQuery: {
+          roles: ['table', 'region', 'group'],
+          textHints: ['Throughput', 'Metrics', 'Status', 'Streams'],
+          fallbackSelector: '.metric-card, .card, table, canvas'
+        },
+        label: 'Live Telemetry & Status',
         duration: 1500
       });
+
       actions.push({ type: 'clear_highlight' });
       actions.push({ type: 'scroll', y: 0, duration: 700 });
     } else {
       // Deep dive feature interaction
-      actions.push({ type: 'scroll', y: 250, duration: 600 });
-      actions.push({ type: 'move', x: 750, y: 400, duration: 500 });
+      const secondaryWf = workflows[1] || workflows[0];
 
-      // Type into input if exists
+      actions.push({ type: 'scroll', y: 250, duration: 600 });
+
+      // Type into search/input if available
       actions.push({
-        type: 'type_into',
-        selector: 'input[type="text"], input[type="search"], input',
-        text: 'Automated Creative Studio',
+        type: 'semantic_type',
+        semanticQuery: {
+          placeholderHints: ['Search', 'Filter', 'Enter', 'Query'],
+          fallbackSelector: 'input[type="text"], input[type="search"], input'
+        },
+        text: 'Production Stream Telemetry',
         duration: 800
       });
 
-      // Click tab or filter
+      // Click tab or filter button
       actions.push({
-        type: 'click_selector',
-        selector: '[role="tab"], .filter-btn, .tab-btn, button:nth-of-type(2)',
-        duration: 500
+        type: 'semantic_click',
+        semanticQuery: {
+          roles: ['tab', 'button'],
+          textHints: [secondaryWf?.name, '24 Hours', 'Analytics', 'Pipelines', 'Filter'],
+          fallbackSelector: '[role="tab"], .tab-btn, button:nth-of-type(2)'
+        },
+        duration: 600
       });
 
-      actions.push({ type: 'wait', duration: 1000 });
-      actions.push({ type: 'scroll', y: 600, duration: 800 });
+      actions.push({ type: 'wait', duration: 900 });
+      actions.push({ type: 'scroll', y: 550, duration: 800 });
+
       actions.push({
-        type: 'highlight_selector',
-        selector: '.chart, canvas, .metric-container, table tr:nth-of-type(2)',
-        label: 'Verified Performance Metric',
-        duration: 1200
+        type: 'semantic_highlight',
+        semanticQuery: {
+          fallbackSelector: '.chart-section, table, .table-container, canvas'
+        },
+        label: 'Verified Real-Time Signal',
+        duration: 1400
       });
+
       actions.push({ type: 'clear_highlight' });
     }
+
+    // Lead-out time
+    actions.push({ type: 'wait', duration: 500, label: 'Lead-out settlement' });
 
     return actions;
   }
 
   /**
-   * Execute an action sequence inside a Puppeteer page
+   * Execute semantic interaction sequence with recovery
    */
   async executeSequence(page, actions, targetDurationSeconds) {
     const startTime = Date.now();
     const targetMs = (targetDurationSeconds || 8) * 1000;
+    const executedActionsLog = [];
 
     for (const action of actions) {
-      if (Date.now() - startTime >= targetMs - 400) break;
+      if (Date.now() - startTime >= targetMs - 300) break;
+
+      const actLog = { type: action.type, label: action.label || '', timestamp: (Date.now() - startTime) / 1000 };
 
       try {
         switch (action.type) {
-          case 'move':
-            await page.evaluate((x, y, d) => {
-              if (window.__creativeCursor) return window.__creativeCursor.moveTo(x, y, d);
-            }, action.x, action.y, action.duration || 500);
-            await new Promise(r => setTimeout(r, action.duration || 500));
-            break;
-
-          case 'click_selector':
-            const el = await page.$(action.selector);
-            if (el) {
-              const box = await el.boundingBox();
-              if (box) {
-                const cx = box.x + box.width / 2;
-                const cy = box.y + box.height / 2;
-                await page.evaluate((x, y) => window.__creativeCursor?.moveTo(x, y, 400), cx, cy);
-                await new Promise(r => setTimeout(r, 400));
-                await page.evaluate((x, y) => window.__creativeCursor?.click(x, y), cx, cy);
-                await el.click().catch(() => {});
-              }
+          case 'semantic_click':
+            const clickedBox = await this.findSemanticElement(page, action.semanticQuery);
+            if (clickedBox) {
+              const cx = clickedBox.x + clickedBox.width / 2;
+              const cy = clickedBox.y + clickedBox.height / 2;
+              await page.evaluate((x, y) => window.__creativeCursor?.moveTo(x, y, 400), cx, cy);
+              await new Promise(r => setTimeout(r, 400));
+              await page.evaluate((x, y) => window.__creativeCursor?.click(x, y), cx, cy);
+              await page.mouse.click(cx, cy).catch(() => {});
             } else {
-              // Click in place
               await page.evaluate(() => window.__creativeCursor?.click());
             }
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, action.duration || 300));
             break;
 
-          case 'highlight_selector':
-            const targetEl = await page.$(action.selector);
-            if (targetEl) {
-              const box = await targetEl.boundingBox();
-              if (box) {
-                await page.evaluate((b, label) => window.__creativeCursor?.highlight(b, label), box, action.label || '');
-                await new Promise(r => setTimeout(r, action.duration || 1000));
-              }
+          case 'semantic_highlight':
+            const hlBox = await this.findSemanticElement(page, action.semanticQuery);
+            if (hlBox) {
+              await page.evaluate((b, l) => window.__creativeCursor?.highlight(b, l), hlBox, action.label || '');
+              await new Promise(r => setTimeout(r, action.duration || 1000));
+            }
+            break;
+
+          case 'semantic_type':
+            const typeBox = await this.findSemanticElement(page, action.semanticQuery);
+            if (typeBox) {
+              const cx = typeBox.x + typeBox.width / 2;
+              const cy = typeBox.y + typeBox.height / 2;
+              await page.evaluate((x, y) => window.__creativeCursor?.moveTo(x, y, 400), cx, cy);
+              await page.mouse.click(cx, cy).catch(() => {});
+              await page.keyboard.type(action.text, { delay: 50 }).catch(() => {});
             }
             break;
 
           case 'clear_highlight':
             await page.evaluate(() => window.__creativeCursor?.clearHighlight());
-            break;
-
-          case 'type_into':
-            const input = await page.$(action.selector);
-            if (input) {
-              await input.click().catch(() => {});
-              await input.type(action.text, { delay: 60 }).catch(() => {});
-            }
             break;
 
           case 'scroll':
@@ -153,15 +175,83 @@ class ProductDemonstrator {
             await new Promise(r => setTimeout(r, action.duration || 500));
             break;
         }
+        actLog.success = true;
       } catch (err) {
-        // Continue sequence gracefully on non-fatal dom deviations
+        actLog.success = false;
+        actLog.error = err.message;
       }
+
+      executedActionsLog.push(actLog);
     }
 
-    // Pad remaining time to match target duration precisely
+    // Pad remaining time to exactly match required scene duration
     const remaining = targetMs - (Date.now() - startTime);
     if (remaining > 50) {
       await new Promise(r => setTimeout(r, remaining));
+    }
+
+    return executedActionsLog;
+  }
+
+  /**
+   * Semantic element locator: searches by accessible text, aria-label, role, or fallback selector
+   */
+  async findSemanticElement(page, query = {}) {
+    if (!query) return null;
+
+    try {
+      const box = await page.evaluate((q) => {
+        const textHints = q.textHints || [];
+        const fallbackSel = q.fallbackSelector || '';
+
+        // 1. Search buttons and links by text hints
+        if (textHints.length > 0) {
+          const candidates = Array.from(document.querySelectorAll('button, a, [role="tab"], [role="button"], h1, h2, h3, .metric-card, .card'));
+          for (const hint of textHints) {
+            if (!hint) continue;
+            const match = candidates.find(el => {
+              const text = el.textContent || '';
+              const aria = el.getAttribute('aria-label') || '';
+              return text.toLowerCase().includes(hint.toLowerCase()) || aria.toLowerCase().includes(hint.toLowerCase());
+            });
+            if (match) {
+              const rect = match.getBoundingClientRect();
+              if (rect.width > 10 && rect.height > 10) {
+                return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+              }
+            }
+          }
+        }
+
+        // 2. Search inputs by placeholder
+        if (q.placeholderHints && q.placeholderHints.length > 0) {
+          const inputs = Array.from(document.querySelectorAll('input, textarea'));
+          for (const ph of q.placeholderHints) {
+            const inputMatch = inputs.find(i => (i.placeholder || '').toLowerCase().includes(ph.toLowerCase()));
+            if (inputMatch) {
+              const rect = inputMatch.getBoundingClientRect();
+              return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+            }
+          }
+        }
+
+        // 3. Fallback selector
+        if (fallbackSel) {
+          const el = document.querySelector(fallbackSel);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.width > 10 && rect.height > 10) {
+              return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+            }
+          }
+        }
+
+        return null;
+      }, query);
+
+      return box;
+    } catch (e) {
+      return null;
     }
   }
 }

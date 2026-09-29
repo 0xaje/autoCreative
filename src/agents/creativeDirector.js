@@ -9,290 +9,179 @@ class CreativeDirector {
   }
 
   /**
-   * Plan the video story arc, scenes, script, and visual strategy
+   * Plan video story arc, scenes, script, and visual strategy conforming to the PRD Scene Manifest
    */
-  planProduction({ userPrompt, mode, targetDuration, aspectRatio, sourceAnalysis, evidenceSummary, projectDir }) {
+  planProduction({ userIntent, projectModel, evidenceSummary, projectDir }) {
     ensureDir(projectDir);
 
-    const safeMode = mode || config.DEFAULT_SPECS.defaultMode;
-    const modeConfig = config.CREATIVE_MODES[safeMode] || config.CREATIVE_MODES.launch;
-    const totalDuration = targetDuration || config.DEFAULT_SPECS.defaultDuration;
-    const isVertical = aspectRatio === '9:16';
+    const intent = userIntent || {};
+    const totalDuration = intent.duration_seconds || 60;
+    const isVertical = intent.aspect_ratio === '9:16';
+    const contentType = intent.content_type || 'product_demo';
 
-    const productName = sourceAnalysis.name || 'Next-Gen Platform';
-    const tagline = sourceAnalysis.tagline || 'Intelligent Production Studio';
-    const features = (sourceAnalysis.features || []).slice(0, 4);
+    const productName = projectModel.project || projectModel.name || 'Autonomous Product';
+    const tagline = projectModel.purpose || projectModel.tagline || 'Intelligent production studio';
+    const problem = projectModel.problem || 'Manual, fragmented workflows waste engineering time.';
+    const features = (projectModel.features || []).slice(0, 4);
 
     // Retrieve verified claims
     const verifiedClaims = (evidenceSummary?.claims || [])
       .filter(c => c.state === 'VERIFIED')
       .map(c => c.claim);
 
-    const partialClaims = (evidenceSummary?.claims || [])
-      .filter(c => c.state === 'PARTIAL')
-      .map(c => c.claim);
+    const f1 = verifiedClaims[0] || features[0] || 'Real-time telemetry and verified workflows';
+    const f2 = verifiedClaims[1] || features[1] || 'Autonomous event processing pipeline';
+    const f3 = verifiedClaims[2] || features[2] || 'Reliable operational intelligence';
 
-    // Build scene architecture according to Creative Mode
     const scenes = this.buildSceneList({
-      mode: safeMode,
+      contentType,
       totalDuration,
       productName,
       tagline,
-      features,
-      verifiedClaims,
-      partialClaims,
-      userPrompt,
+      problem,
+      f1,
+      f2,
+      f3,
+      customInstructions: intent.custom_instructions || [],
       isVertical
     });
 
-    const manifest = {
-      projectTitle: `${productName} - ${modeConfig.name}`,
-      productName,
-      tagline,
-      creativeMode: safeMode,
-      modeDescription: modeConfig.tagline,
-      aspectRatio: isVertical ? '9:16' : '16:9',
+    // Format PRD Scene Manifest
+    const sceneManifest = {
+      projectTitle: `${productName} — ${contentType.replace(/_/g, ' ').toUpperCase()}`,
+      duration: totalDuration,
+      aspect_ratio: intent.aspect_ratio || '16:9',
       resolution: isVertical ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 },
-      targetTotalDuration: totalDuration,
-      scenesCount: scenes.length,
-      scenes,
-      plannedAt: new Date().toISOString()
+      audience: intent.audience || 'general_technical',
+      tone: intent.tone || 'premium',
+      scenes
     };
 
-    // Extract complete script
+    // Full spoken script JSON
     const script = {
-      productName,
+      project: productName,
       totalScenes: scenes.length,
-      fullText: scenes.map(s => s.narrationText).join(' '),
+      fullText: scenes.map(s => s.voiceover).join(' '),
       scenes: scenes.map(s => ({
         id: s.id,
-        title: s.title,
-        narrationText: s.narrationText,
-        estimatedDuration: s.targetDuration,
+        purpose: s.purpose,
+        voiceover: s.voiceover,
+        duration: s.duration,
         evidenceTag: s.evidenceState
       }))
     };
 
-    // Write scene-manifest.json and script.json
-    fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+    fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(sceneManifest, null, 2), 'utf8');
     fs.writeFileSync(path.join(projectDir, 'script.json'), JSON.stringify(script, null, 2), 'utf8');
 
-    return { manifest, script };
+    return { manifest: sceneManifest, script };
   }
 
   /**
-   * Structure scenes dynamically based on mode and evidence
+   * Build structured scenes according to PRD requirements
    */
-  buildSceneList({ mode, totalDuration, productName, tagline, features, verifiedClaims, partialClaims, userPrompt, isVertical }) {
-    const f1 = verifiedClaims[0] || features[0] || 'Real-time interactive workflows';
-    const f2 = verifiedClaims[1] || features[1] || 'Intelligent automation pipeline';
-    const f3 = verifiedClaims[2] || features[2] || 'Production-grade analytics and controls';
+  buildSceneList({ contentType, totalDuration, productName, tagline, problem, f1, f2, f3, customInstructions, isVertical }) {
+    const condenseArch = customInstructions.includes('condense_architecture');
+    const enhanceHook = customInstructions.includes('enhance_hook');
 
-    if (mode === 'social_short') {
-      // 30-second vertical social short
+    if (contentType === 'social_short' || totalDuration <= 30) {
       return [
         {
-          id: 'scene-01-hook',
-          index: 0,
-          title: 'High-Energy Hook',
-          type: 'motion_graphic',
-          targetDuration: 5,
+          id: 'hook',
+          duration: 5,
+          type: 'cinematic_hook',
+          purpose: 'High-energy hook introducing the problem',
+          voiceover: enhanceHook
+            ? `Stop wasting engineering hours on manual toolchains. Here is how ${productName} changes everything.`
+            : `Here is how ${productName} solves ${problem}`,
+          visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
           evidenceState: 'VERIFIED',
-          narrationText: `Stop wasting hours on manual work. Here is how ${productName} changes the game.`,
-          visualPlan: {
-            motionType: 'intro_punchy',
-            headline: productName,
-            subline: tagline,
-            colorAccent: '#6366f1'
-          },
-          overlay: {
-            lowerThird: null,
-            badge: 'BREAKTHROUGH'
-          }
+          title: 'High-Energy Hook'
         },
         {
-          id: 'scene-02-demo',
-          index: 1,
-          title: 'Core Feature In Action',
-          type: 'screen_recording',
-          targetDuration: 15,
+          id: 'product_demo',
+          duration: Math.max(totalDuration - 13, 10),
+          type: 'product_demo',
+          purpose: 'Demonstrate primary live product workflow',
+          voiceover: `Watch this. With just one click, ${f1} executes seamlessly inside the live application with verified performance.`,
+          visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
-          narrationText: `Watch this. With just one click, ${f1} executes seamlessly right inside the live application.`,
-          visualPlan: {
-            interaction: 'explore_primary_feature',
-            targetSelector: 'button, .feature-action',
-            zoomLevel: 1.2
-          },
-          overlay: {
-            lowerThird: { title: 'Live Product', subtitle: f1 },
-            badge: 'VERIFIED FEATURE'
-          }
+          title: 'Live Product Action',
+          overlay: { lowerThird: { title: 'Live Capability', subtitle: f1 }, badge: 'VERIFIED' }
         },
         {
-          id: 'scene-03-cta',
-          index: 2,
-          title: 'Call to Action',
-          type: 'motion_graphic',
-          targetDuration: 10,
+          id: 'outro_cta',
+          duration: 8,
+          type: 'call_to_action',
+          purpose: 'Final call to action and momentum',
+          voiceover: `Experience ${productName} today. Link in description.`,
+          visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],
           evidenceState: 'VERIFIED',
-          narrationText: `Experience ${productName} today. Link in description.`,
-          visualPlan: {
-            motionType: 'outro_cta',
-            ctaText: 'Get Started Now',
-            url: 'Open Source / Live Web'
-          },
-          overlay: {
-            lowerThird: null,
-            badge: 'AVAILABLE NOW'
-          }
+          title: 'Call to Action'
         }
       ];
     }
 
-    if (mode === 'demo') {
-      // Hands-on feature demo (4 scenes)
-      const d = Math.round(totalDuration / 4);
-      return [
-        {
-          id: 'scene-01-intro',
-          index: 0,
-          title: 'Product Overview',
-          type: 'motion_graphic',
-          targetDuration: d,
-          evidenceState: 'VERIFIED',
-          narrationText: `Welcome to the official demonstration of ${productName}, designed for ${tagline}.`,
-          visualPlan: { motionType: 'intro_cinematic', headline: productName, subline: tagline },
-          overlay: { badge: 'PRODUCT DEMO' }
-        },
-        {
-          id: 'scene-02-feature1',
-          index: 1,
-          title: 'Primary Workflow',
-          type: 'screen_recording',
-          targetDuration: d + 2,
-          evidenceState: 'VERIFIED',
-          narrationText: `Let's dive straight into the primary interface. Here, ${f1} allows users to execute complex tasks in seconds.`,
-          visualPlan: { interaction: 'explore_primary_feature', targetSelector: 'nav, button' },
-          overlay: { lowerThird: { title: 'Core Interface', subtitle: f1 }, badge: 'VERIFIED' }
-        },
-        {
-          id: 'scene-03-feature2',
-          index: 2,
-          title: 'Deep Feature Walkthrough',
-          type: 'screen_recording',
-          targetDuration: d + 2,
-          evidenceState: 'VERIFIED',
-          narrationText: `Next, examine the powerful integration of ${f2}. Everything responds in real time with verified precision.`,
-          visualPlan: { interaction: 'deep_dive_feature', targetSelector: 'input, .card' },
-          overlay: { lowerThird: { title: 'Workflow Engine', subtitle: f2 }, badge: 'VERIFIED' }
-        },
-        {
-          id: 'scene-04-outro',
-          index: 3,
-          title: 'Summary & Next Steps',
-          type: 'motion_graphic',
-          targetDuration: d - 4,
-          evidenceState: 'VERIFIED',
-          narrationText: `That was a fast look at ${productName}. Built for developers and creators who value speed and clarity.`,
-          visualPlan: { motionType: 'outro_cta', ctaText: 'Explore the Project' },
-          overlay: { badge: 'FINISHED DEMO' }
-        }
-      ];
-    }
-
-    // Default: Cinematic Launch / Product Presentation (5 scenes)
+    // 5-scene standard broadcast structure
     const baseDuration = Math.round(totalDuration / 5);
+    const archDuration = condenseArch ? Math.max(baseDuration - 3, 4) : baseDuration;
+    const demoBonus = condenseArch ? 3 : 0;
 
     return [
       {
-        id: 'scene-01-hero-intro',
-        index: 0,
+        id: 'hook',
+        duration: Math.max(baseDuration - 2, 7),
+        type: 'cinematic_hook',
+        purpose: 'Introduce the problem and capture immediate attention',
+        voiceover: `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}.`,
+        visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
+        evidenceState: 'VERIFIED',
         title: 'Cinematic Hook & Title',
-        type: 'motion_graphic',
-        targetDuration: Math.max(baseDuration - 2, 7),
-        evidenceState: 'VERIFIED',
-        narrationText: `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}.`,
-        visualPlan: {
-          motionType: 'intro_cinematic',
-          headline: productName,
-          subline: tagline,
-          colorAccent: '#6366f1'
-        },
-        overlay: {
-          badge: 'PRODUCT LAUNCH'
-        }
+        overlay: { badge: 'PRODUCT LAUNCH' }
       },
       {
-        id: 'scene-02-the-problem',
-        index: 1,
+        id: 'product_reveal',
+        duration: archDuration,
+        type: 'product_reveal',
+        purpose: 'Reveal the architecture and the core solution',
+        voiceover: `Traditional tools are fragmented and manual. ${productName} reimagines the entire experience into an intuitive, unified platform.`,
+        visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
+        evidenceState: 'VERIFIED',
         title: 'The Challenge & Architecture',
-        type: 'hybrid_callout',
-        targetDuration: baseDuration,
-        evidenceState: 'VERIFIED',
-        narrationText: `Traditional workflows are fragmented and manual. ${productName} reimagines the entire process with an intuitive, unified platform.`,
-        visualPlan: {
-          motionType: 'problem_solution_split',
-          headline: 'The Problem: Fragmented Tools',
-          subline: 'The Solution: Autonomous Unified Experience'
-        },
-        overlay: {
-          lowerThird: { title: 'Architecture', subtitle: 'Automated & Cohesive' },
-          badge: 'ARCHITECTURE'
-        }
+        overlay: { lowerThird: { title: 'Architecture', subtitle: 'Automated & Cohesive' }, badge: 'ARCHITECTURE' }
       },
       {
-        id: 'scene-03-live-feature-1',
-        index: 2,
+        id: 'feature_1',
+        duration: baseDuration + demoBonus + 2,
+        type: 'product_demo',
+        purpose: 'Demonstrate primary live workflow with real product footage',
+        voiceover: `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}.`,
+        visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
+        evidenceState: 'VERIFIED',
         title: 'Core Product in Action',
-        type: 'screen_recording',
-        targetDuration: baseDuration + 3,
-        evidenceState: 'VERIFIED',
-        narrationText: `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}.`,
-        visualPlan: {
-          interaction: 'explore_primary_feature',
-          targetSelector: 'nav a, button.btn-primary',
-          scrollBehavior: 'smooth'
-        },
-        overlay: {
-          lowerThird: { title: 'Live Capability', subtitle: f1 },
-          badge: 'VERIFIED EVIDENCE'
-        }
+        overlay: { lowerThird: { title: 'Live Capability', subtitle: f1 }, badge: 'VERIFIED EVIDENCE' }
       },
       {
-        id: 'scene-04-live-feature-2',
-        index: 3,
+        id: 'feature_2',
+        duration: baseDuration + 2,
+        type: 'product_demo',
+        purpose: 'Demonstrate deep dive feature with real telemetry results',
+        voiceover: `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
+        visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
+        evidenceState: 'VERIFIED',
         title: 'Deep Dive & Real Results',
-        type: 'screen_recording',
-        targetDuration: baseDuration + 2,
-        evidenceState: 'VERIFIED',
-        narrationText: `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
-        visualPlan: {
-          interaction: 'deep_dive_feature',
-          targetSelector: 'input, select, .metric-card',
-          scrollBehavior: 'smooth'
-        },
-        overlay: {
-          lowerThird: { title: 'Performance Engine', subtitle: f2 },
-          badge: 'VERIFIED EVIDENCE'
-        }
+        overlay: { lowerThird: { title: 'Performance Engine', subtitle: f2 }, badge: 'VERIFIED EVIDENCE' }
       },
       {
-        id: 'scene-05-outro-cta',
-        index: 4,
-        title: 'Momentum & Call to Action',
-        type: 'motion_graphic',
-        targetDuration: Math.max(baseDuration - 3, 7),
+        id: 'outro_cta',
+        duration: Math.max(baseDuration - 3, 7),
+        type: 'call_to_action',
+        purpose: 'Encourage adoption with clear next steps',
+        voiceover: `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output.`,
+        visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],
         evidenceState: 'VERIFIED',
-        narrationText: `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output.`,
-        visualPlan: {
-          motionType: 'outro_cta',
-          headline: 'Start Creating Today',
-          ctaText: 'Visit Live Application',
-          url: 'Repository & Live Deployment Available'
-        },
-        overlay: {
-          badge: 'GET STARTED'
-        }
+        title: 'Momentum & Call to Action',
+        overlay: { badge: 'GET STARTED' }
       }
     ];
   }

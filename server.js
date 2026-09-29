@@ -157,6 +157,62 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
   }
 });
 
+// API: Natural Language Regeneration (PRD Section 16)
+app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { userRequest } = req.body;
+
+    if (!userRequest) {
+      return res.status(400).json({ error: 'userRequest is required (e.g. "Make the opening stronger", "Make it 60 seconds", "Make it vertical")' });
+    }
+
+    const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
+    activePipelines.set(projectId, pipeline);
+
+    pipeline.on('progress', (data) => broadcast('progress', data));
+    pipeline.on('error', (data) => broadcast('error', data));
+
+    res.json({
+      success: true,
+      message: `Autonomous natural language regeneration started for: "${userRequest}"`
+    });
+
+    pipeline.executeNaturalLanguageRegeneration(projectId, userRequest).then(result => {
+      broadcast('intent_regenerated', { projectId, userRequest, result });
+    }).catch(err => {
+      console.error(`Regeneration error on project ${projectId}:`, err);
+      broadcast('error', { projectId, error: err.message });
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: Get raw artifact content
+app.get('/api/projects/:id/artifacts/:name', (req, res) => {
+  try {
+    const { id, name } = req.params;
+    const safeName = path.basename(name);
+    const filePath = path.join(config.PROJECTS_DIR, id, safeName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: `Artifact ${safeName} not found` });
+    }
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    if (safeName.endsWith('.json')) {
+      res.setHeader('Content-Type', 'application/json');
+    } else {
+      res.setHeader('Content-Type', 'text/plain');
+    }
+    res.send(content);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API: Stream video with range support
 app.get('/api/projects/:id/video', (req, res) => {
   const videoPath = path.join(config.PROJECTS_DIR, req.params.id, 'output.mp4');

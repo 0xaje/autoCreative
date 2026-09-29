@@ -4,6 +4,7 @@ const EventEmitter = require('events');
 const config = require('../config');
 const { ensureDir } = require('../utils/ffmpegHelper');
 
+const IntentEngine = require('./intentEngine');
 const Researcher = require('./researcher');
 const EvidenceEngine = require('./evidenceEngine');
 const CreativeDirector = require('./creativeDirector');
@@ -14,11 +15,28 @@ const AudioEngineer = require('./audioEngineer');
 const VideoEditor = require('./videoEditor');
 const QualityController = require('./qualityController');
 
+// Formal PRD Project States
+const PROJECT_STATES = {
+  CREATED: 'CREATED',
+  ANALYZING: 'ANALYZING',
+  UNDERSTOOD: 'UNDERSTOOD',
+  PLANNING: 'PLANNING',
+  EXPLORING: 'EXPLORING',
+  RECORDING: 'RECORDING',
+  GENERATING: 'GENERATING',
+  COMPOSING: 'COMPOSING',
+  RENDERING: 'RENDERING',
+  QUALITY_CHECK: 'QUALITY_CHECK',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+};
+
 class ProductionPipeline extends EventEmitter {
   constructor(options = {}) {
     super();
     this.options = options;
 
+    this.intentEngine = new IntentEngine();
     this.researcher = new Researcher();
     this.evidenceEngine = new EvidenceEngine();
     this.creativeDirector = new CreativeDirector();
@@ -35,39 +53,44 @@ class ProductionPipeline extends EventEmitter {
    */
   async runPipeline({
     projectId,
+    projectName,
     githubUrl,
     liveUrl,
     localPath,
     prompt,
-    mode = 'launch',
-    duration = 60,
-    aspectRatio = '16:9',
-    voiceId = 'en-US-ChristopherNeural',
-    musicStyle = 'cinematic'
+    mode,
+    duration,
+    aspectRatio,
+    voiceId,
+    musicStyle,
+    provider
   }) {
     const id = projectId || `proj_${Date.now()}`;
     const projectDir = ensureDir(path.join(config.PROJECTS_DIR, id));
 
     const projectData = {
       id,
+      projectName: projectName || 'Autonomous Project',
       createdAt: new Date().toISOString(),
-      status: 'PROCESSING',
+      status: PROJECT_STATES.CREATED,
+      currentStage: PROJECT_STATES.CREATED,
+      progressPercent: 0,
       inputs: {
+        projectName,
         githubUrl: githubUrl || null,
         liveUrl: liveUrl || null,
         localPath: localPath || null,
         prompt: prompt || 'Professional product presentation video showcasing key capabilities',
         mode,
-        duration: parseInt(duration, 10) || 60,
+        duration,
         aspectRatio,
         voiceId,
         musicStyle
       },
-      currentStage: 'INITIALIZING',
-      progressPercent: 5,
       artifacts: {
         projectJson: path.join(projectDir, 'project.json'),
-        sourceAnalysis: null,
+        projectModel: null,
+        intent: null,
         evidence: null,
         sceneManifest: null,
         script: null,
@@ -77,32 +100,60 @@ class ProductionPipeline extends EventEmitter {
       logs: []
     };
 
-    const log = (agent, message, percent) => {
-      const entry = { timestamp: new Date().toISOString(), agent, message };
+    const setStage = (stage, message, percent, agent = 'Creative Director') => {
+      projectData.status = stage;
+      projectData.currentStage = stage;
+      if (percent !== undefined) projectData.progressPercent = percent;
+      const entry = { timestamp: new Date().toISOString(), stage, agent, message };
       projectData.logs.push(entry);
-      if (percent) projectData.progressPercent = percent;
-      projectData.currentStage = agent.toUpperCase();
-      this.emit('progress', { projectId: id, agent, message, percent: projectData.progressPercent });
+
+      this.emit('progress', {
+        projectId: id,
+        stage,
+        agent,
+        message,
+        percent: projectData.progressPercent
+      });
+
       fs.writeFileSync(path.join(projectDir, 'project.json'), JSON.stringify(projectData, null, 2), 'utf8');
     };
 
     try {
-      log('Creative Director', `Initiating Autonomous Studio Pipeline for Project [${id}]...`, 8);
+      setStage(PROJECT_STATES.CREATED, `Initializing production for [${id}]...`, 5, 'Creative Director');
 
-      // Stage 1: Researcher (UNDERSTAND)
-      log('Researcher', 'Scanning repository code, documentation, and live interface...', 15);
-      const sourceAnalysis = await this.researcher.analyzeSource({
-        githubUrl,
-        liveUrl,
-        localPath,
-        projectDir,
-        onProgress: (p) => log(p.agent, p.message)
-      });
-      projectData.artifacts.sourceAnalysis = path.join(projectDir, 'source-analysis.json');
+      // 1. Intent Engine (Parse natural language creative request into Intent Model)
+      const userIntent = this.intentEngine.parseIntent(prompt, {
+        mode,
+        duration,
+        aspectRatio,
+        voiceId
+      }, projectDir);
+      projectData.artifacts.intent = path.join(projectDir, 'intent.json');
+      projectData.intent = userIntent;
 
-      // Stage 2: Evidence Engine (EVIDENCE RULE)
-      log('Evidence Engine', 'Cross-referencing claims against live DOM elements and codebase...', 25);
-      const evidenceSummary = this.evidenceEngine.processEvidence(sourceAnalysis, projectDir);
+      // 2. Researcher: ANALYZING -> UNDERSTOOD
+      setStage(PROJECT_STATES.ANALYZING, 'Analyzing repository structure, documentation, and live application DOM...', 12, 'Researcher');
+
+      let projectModel = null;
+      try {
+        projectModel = await this.researcher.analyzeSource({
+          projectName,
+          githubUrl,
+          liveUrl,
+          localPath,
+          projectDir,
+          onProgress: (p) => setStage(PROJECT_STATES.ANALYZING, p.message, 18, p.agent)
+        });
+        projectData.artifacts.projectModel = path.join(projectDir, 'project_model.json');
+        projectData.projectModel = projectModel;
+      } catch (err) {
+        throw this.wrapError('LIVE_APP_UNREACHABLE', `Failed to analyze application source: ${err.message}`);
+      }
+
+      setStage(PROJECT_STATES.UNDERSTOOD, `Product understood: ${projectModel.project} (${projectModel.purpose})`, 25, 'Researcher');
+
+      // 3. Evidence Engine (Evaluate Claims against Evidence Rule)
+      const evidenceSummary = this.evidenceEngine.processEvidence(projectModel, projectDir);
       projectData.artifacts.evidence = path.join(projectDir, 'evidence.json');
       projectData.evidenceSummary = {
         total: evidenceSummary.totalClaims,
@@ -111,16 +162,12 @@ class ProductionPipeline extends EventEmitter {
         unverified: evidenceSummary.unverifiedCount,
         future: evidenceSummary.futureCount
       };
-      log('Evidence Engine', `Identified ${evidenceSummary.verifiedCount} verified features. Unverified claims excluded.`, 30);
 
-      // Stage 3: Creative Director (PLAN)
-      log('Creative Director', `Drafting story arc, scenes, and narration script for [${mode.toUpperCase()}] mode...`, 35);
+      // 4. Creative Director: PLANNING
+      setStage(PROJECT_STATES.PLANNING, `Planning story arc, sequence, and narration for ${userIntent.content_type}...`, 32, 'Creative Director');
       const { manifest, script } = this.creativeDirector.planProduction({
-        userPrompt: prompt,
-        mode,
-        targetDuration: projectData.inputs.duration,
-        aspectRatio,
-        sourceAnalysis,
+        userIntent,
+        projectModel,
         evidenceSummary,
         projectDir
       });
@@ -128,8 +175,7 @@ class ProductionPipeline extends EventEmitter {
       projectData.artifacts.script = path.join(projectDir, 'script.json');
       projectData.manifest = manifest;
 
-      // Stage 4: Scene Production (RECORD & GENERATE)
-      // For each scene: record or render visual footage + synthesize voiceover
+      // 5. Semantic Browser & Voice Generation: EXPLORING -> RECORDING -> GENERATING
       let targetUrl = liveUrl;
       if (!targetUrl && localPath) {
         const resolved = path.resolve(localPath);
@@ -147,50 +193,65 @@ class ProductionPipeline extends EventEmitter {
       if (!targetUrl) {
         targetUrl = `file://${path.resolve(config.DEMO_APPS_DIR, 'saas-analytics', 'index.html')}`;
       }
+
       const resolution = manifest.resolution;
       const completedScenes = [];
-
       const scenesTotal = manifest.scenes.length;
       let sceneStep = 0;
 
       for (const scene of manifest.scenes) {
         sceneStep++;
-        const baseScenePct = 40 + Math.round((sceneStep / scenesTotal) * 30);
+        const baseScenePct = 35 + Math.round((sceneStep / scenesTotal) * 35);
 
-        log('Voice Producer', `Synthesizing neural speech for Scene ${sceneStep}/${scenesTotal}: "${scene.title}"...`, baseScenePct - 2);
-        const voiceResult = await this.voiceProducer.produceSceneVoice({
-          scene,
-          voiceId,
-          projectDir,
-          onProgress: (p) => log(p.agent, p.message)
-        });
+        // Voice Generation
+        setStage(PROJECT_STATES.GENERATING, `Synthesizing neural voice for Scene ${sceneStep}/${scenesTotal}: "${scene.title}"...`, baseScenePct - 2, 'Voice Producer');
+        let voiceResult = null;
+        try {
+          voiceResult = await this.voiceProducer.produceSceneVoice({
+            scene: { id: scene.id, title: scene.title, narrationText: scene.voiceover, targetDuration: scene.duration },
+            voiceId: userIntent.voice_id,
+            provider: provider || 'edge-tts',
+            projectDir,
+            onProgress: (p) => setStage(PROJECT_STATES.GENERATING, p.message, baseScenePct - 1, p.agent)
+          });
+        } catch (err) {
+          throw this.wrapError('VOICE_GENERATION_FAILED', `Failed to generate voice for scene ${scene.id}: ${err.message}`);
+        }
 
         scene.audioPath = voiceResult.audioPath;
         scene.subtitlesPath = voiceResult.subtitlesPath;
         scene.audioDuration = voiceResult.duration;
         scene.subtitles = voiceResult.subtitles;
 
-        if (scene.type === 'screen_recording') {
-          log('Screen Recorder', `Launching Chrome & capturing live footage for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct);
-          const recordingResult = await this.screenRecorder.recordSceneFootage({
-            scene,
-            targetUrl: targetUrl || `file://${path.resolve(__dirname, '../../demo-apps/saas-analytics/index.html')}`,
-            durationSeconds: Math.ceil(voiceResult.duration),
-            resolution,
-            projectDir,
-            onProgress: (p) => log(p.agent, p.message)
-          });
-          scene.videoPath = recordingResult.outputPath;
+        // Visuals (Recording or Motion Graphic)
+        const primaryVisual = scene.visuals?.[0] || {};
+        if (primaryVisual.source === 'browser_recording' || scene.type === 'product_demo') {
+          setStage(PROJECT_STATES.RECORDING, `Recording semantic product interaction for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Screen Recorder');
+          try {
+            const recordingResult = await this.screenRecorder.recordSceneFootage({
+              scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, overlay: scene.overlay, visualPlan: scene.visualPlan },
+              targetUrl,
+              durationSeconds: Math.ceil(voiceResult.duration),
+              resolution,
+              projectModel,
+              projectDir,
+              onProgress: (p) => setStage(PROJECT_STATES.RECORDING, p.message, baseScenePct, p.agent)
+            });
+            scene.videoPath = recordingResult.outputPath;
+            scene.recordingMetadata = recordingResult.metadataPath;
+          } catch (err) {
+            throw this.wrapError('RECORDING_FAILED', `Failed to capture product footage for scene ${scene.id}: ${err.message}`);
+          }
         } else {
-          // motion_graphic or hybrid_callout
-          log('Motion Designer', `Rendering motion graphics for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct);
+          setStage(PROJECT_STATES.GENERATING, `Rendering procedural motion graphics for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Motion Designer');
+          const motionType = primaryVisual.motionType || (scene.id === 'hook' ? 'intro_cinematic' : scene.id === 'product_reveal' ? 'problem_solution_split' : 'outro_cta');
           const motionResult = await this.motionDesigner.renderMotionClip({
-            scene,
-            sourceAnalysis,
+            scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, visualPlan: { motionType } },
+            sourceAnalysis: projectModel,
             durationSeconds: Math.ceil(voiceResult.duration),
             resolution,
             projectDir,
-            onProgress: (p) => log(p.agent, p.message)
+            onProgress: (p) => setStage(PROJECT_STATES.GENERATING, p.message, baseScenePct, p.agent)
           });
           scene.videoPath = motionResult.outputPath;
         }
@@ -198,46 +259,60 @@ class ProductionPipeline extends EventEmitter {
         completedScenes.push(scene);
       }
 
-      // Update scene manifest with paths and exact durations
       manifest.scenes = completedScenes;
       fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 
-      // Stage 5: Audio Engineer (AUDIO MIX & DUCKING)
+      // 6. Audio Engineer: COMPOSING
       const totalAudioDuration = completedScenes.reduce((acc, s) => acc + (s.audioDuration || 5), 0);
-      log('Audio Engineer', `Composing soundtrack and applying smart sidechain ducking (${totalAudioDuration.toFixed(1)}s)...`, 75);
+      setStage(PROJECT_STATES.COMPOSING, `Composing soundtrack and applying smart sidechain audio ducking (${totalAudioDuration.toFixed(1)}s)...`, 75, 'Audio Engineer');
       const masterAudio = await this.audioEngineer.produceMasterAudio({
         scenes: completedScenes,
         totalDuration: totalAudioDuration,
-        musicStyle,
+        musicStyle: musicStyle || 'cinematic',
         projectDir,
-        onProgress: (p) => log(p.agent, p.message)
+        onProgress: (p) => setStage(PROJECT_STATES.COMPOSING, p.message, 78, p.agent)
       });
 
-      // Stage 6: Video Editor (EDIT & RENDER)
-      log('Video Editor', 'Composing multi-track video timeline and rendering master broadcast MP4...', 85);
-      const renderResult = await this.videoEditor.composeAndRender({
-        scenes: completedScenes,
-        masterAudioPath: masterAudio.masterMixPath,
-        resolution,
-        projectDir,
-        onProgress: (p) => log(p.agent, p.message)
-      });
+      // 7. Video Editor: RENDERING
+      setStage(PROJECT_STATES.RENDERING, 'Composing multi-track video timeline and encoding broadcast MP4...', 82, 'Video Editor');
+      let renderResult = null;
+      try {
+        renderResult = await this.videoEditor.composeAndRender({
+          scenes: completedScenes.map(s => ({
+            ...s,
+            narrationText: s.voiceover,
+            targetDuration: s.duration
+          })),
+          masterAudioPath: masterAudio.masterMixPath,
+          resolution,
+          projectDir,
+          onProgress: (p) => setStage(PROJECT_STATES.RENDERING, p.message, 88, p.agent)
+        });
+      } catch (err) {
+        throw this.wrapError('RENDER_FAILED', `Failed to render final MP4: ${err.message}`);
+      }
       projectData.artifacts.outputMp4 = renderResult.projectRootMp4;
 
-      // Stage 7: Quality Controller (QC INSPECT)
-      log('Quality Controller', 'Inspecting video codecs, stream sync, bitrate, and playback health...', 95);
-      const qcReport = await this.qualityController.inspectMasterVideo({
-        videoPath: renderResult.projectRootMp4,
-        targetDuration: totalAudioDuration,
-        resolution,
-        projectDir,
-        onProgress: (p) => log(p.agent, p.message)
-      });
+      // 8. Quality Controller: QUALITY_CHECK
+      setStage(PROJECT_STATES.QUALITY_CHECK, 'Running automated technical, visual, narrative, and product accuracy checks...', 94, 'Quality Controller');
+      let qcReport = null;
+      try {
+        qcReport = await this.qualityController.inspectMasterVideo({
+          videoPath: renderResult.projectRootMp4,
+          targetDuration: totalAudioDuration,
+          resolution,
+          projectDir,
+          onProgress: (p) => setStage(PROJECT_STATES.QUALITY_CHECK, p.message, 97, p.agent)
+        });
+      } catch (err) {
+        throw this.wrapError('QUALITY_CHECK_FAILED', `Quality check failed: ${err.message}`);
+      }
+
       projectData.artifacts.qcReport = path.join(projectDir, 'qc-report.json');
       projectData.qc = qcReport;
 
-      // Finalize
-      projectData.status = 'COMPLETED';
+      // 9. Completed
+      projectData.status = PROJECT_STATES.COMPLETED;
       projectData.progressPercent = 100;
       projectData.completedAt = new Date().toISOString();
       projectData.finalVideo = {
@@ -248,101 +323,128 @@ class ProductionPipeline extends EventEmitter {
         sizeBytes: renderResult.sizeBytes
       };
 
-      log('Creative Director', `Production complete! Broadcast MP4 delivered: ${path.basename(renderResult.projectRootMp4)}`, 100);
-      fs.writeFileSync(path.join(projectDir, 'project.json'), JSON.stringify(projectData, null, 2), 'utf8');
-
+      setStage(PROJECT_STATES.COMPLETED, `Production successfully delivered: ${path.basename(renderResult.projectRootMp4)}`, 100, 'Creative Director');
       this.emit('complete', { projectId: id, projectData });
       return projectData;
     } catch (err) {
-      projectData.status = 'FAILED';
+      projectData.status = PROJECT_STATES.FAILED;
+      projectData.errorCode = err.code || 'UNKNOWN_ERROR';
       projectData.error = err.message;
-      log('Creative Director', `Production halted due to error: ${err.message}`, projectData.progressPercent);
-      fs.writeFileSync(path.join(projectDir, 'project.json'), JSON.stringify(projectData, null, 2), 'utf8');
-      this.emit('error', { projectId: id, error: err.message });
+      setStage(PROJECT_STATES.FAILED, `Production halted [${projectData.errorCode}]: ${err.message}`, projectData.progressPercent, 'Creative Director');
+      this.emit('error', { projectId: id, error: err.message, code: projectData.errorCode });
       throw err;
     }
   }
 
   /**
-   * Selective Scene Regeneration:
-   * Regenerate a single scene without rebuilding the rest of the project!
+   * Natural Language Regeneration (Section 16 of PRD)
+   * Modifies only relevant production artifacts without repeating repo analysis or browser discovery!
    */
-  async regenerateScene(projectId, sceneIndex, updates = {}) {
+  async executeNaturalLanguageRegeneration(projectId, userRequest) {
     const projectDir = path.join(config.PROJECTS_DIR, projectId);
     const projectJsonPath = path.join(projectDir, 'project.json');
-    if (!fs.existsSync(projectJsonPath)) {
-      throw new Error(`Project ${projectId} not found`);
-    }
+    if (!fs.existsSync(projectJsonPath)) throw new Error(`Project ${projectId} not found`);
 
     const projectData = JSON.parse(fs.readFileSync(projectJsonPath, 'utf8'));
     const manifestPath = path.join(projectDir, 'scene-manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-
-    const scene = manifest.scenes[sceneIndex];
-    if (!scene) {
-      throw new Error(`Scene at index ${sceneIndex} not found`);
-    }
+    const projectModel = JSON.parse(fs.readFileSync(path.join(projectDir, 'project_model.json'), 'utf8'));
 
     const log = (agent, message, percent) => {
-      const entry = { timestamp: new Date().toISOString(), agent: `[REGEN] ${agent}`, message };
-      projectData.logs.push(entry);
-      this.emit('progress', { projectId, agent, message, percent });
+      this.emit('progress', { projectId, stage: 'REGENERATING', agent: `[REGEN] ${agent}`, message, percent });
     };
 
-    log('Creative Director', `Starting selective regeneration for Scene ${sceneIndex + 1}: "${scene.title}"...`, 10);
+    log('Creative Director', `Interpreting natural language regeneration request: "${userRequest}"...`, 15);
 
-    // Apply updates if specified
-    if (updates.narrationText) scene.narrationText = updates.narrationText;
-    if (updates.visualPlan) scene.visualPlan = Object.assign(scene.visualPlan || {}, updates.visualPlan);
+    // Parse updated intent
+    const updatedIntent = this.intentEngine.parseIntent(userRequest, {}, projectDir);
 
-    const voiceId = updates.voiceId || projectData.inputs.voiceId;
-    const resolution = manifest.resolution;
+    let needsVoiceResynth = false;
+    let needsVideoReassemble = false;
 
-    // 1. Re-produce scene voice
-    log('Voice Producer', `Re-synthesizing voice for Scene ${sceneIndex + 1}...`, 30);
-    const voiceResult = await this.voiceProducer.produceSceneVoice({
-      scene,
-      voiceId,
-      projectDir,
-      onProgress: (p) => log(p.agent, p.message)
-    });
-    scene.audioPath = voiceResult.audioPath;
-    scene.subtitlesPath = voiceResult.subtitlesPath;
-    scene.audioDuration = voiceResult.duration;
-    scene.subtitles = voiceResult.subtitles;
-
-    // 2. Re-record or re-render video if requested
-    if (updates.reRecord || scene.type === 'screen_recording') {
-      const targetUrl = projectData.inputs.liveUrl || `file://${path.resolve(__dirname, '../../demo-apps/saas-analytics/index.html')}`;
-      log('Screen Recorder', `Re-recording footage for Scene ${sceneIndex + 1}...`, 50);
-      const recordingResult = await this.screenRecorder.recordSceneFootage({
-        scene,
-        targetUrl,
-        durationSeconds: Math.ceil(voiceResult.duration),
-        resolution,
-        projectDir,
-        onProgress: (p) => log(p.agent, p.message)
-      });
-      scene.videoPath = recordingResult.outputPath;
-    } else {
-      log('Motion Designer', `Re-rendering motion graphics for Scene ${sceneIndex + 1}...`, 50);
-      const sourceAnalysis = JSON.parse(fs.readFileSync(path.join(projectDir, 'source-analysis.json'), 'utf8'));
-      const motionResult = await this.motionDesigner.renderMotionClip({
-        scene,
-        sourceAnalysis,
-        durationSeconds: Math.ceil(voiceResult.duration),
-        resolution,
-        projectDir,
-        onProgress: (p) => log(p.agent, p.message)
-      });
-      scene.videoPath = motionResult.outputPath;
+    // 1. If opening modified ("make the opening stronger")
+    if (updatedIntent.custom_instructions.includes('enhance_hook') && manifest.scenes[0]) {
+      log('Creative Director', 'Rewriting Scene 1 with high-impact opening hook...', 25);
+      manifest.scenes[0].voiceover = `Stop wasting engineering time on fragmented tools. Here is why ${projectModel.project} changes everything.`;
+      manifest.scenes[0].narrationText = manifest.scenes[0].voiceover;
+      needsVoiceResynth = true;
     }
 
-    manifest.scenes[sceneIndex] = scene;
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    // 2. If remove cinematic intro requested ("remove the cinematic intro", "skip intro")
+    if (updatedIntent.custom_instructions.includes('remove_cinematic_intro') && manifest.scenes[0]) {
+      log('Creative Director', 'Reframing Scene 1 to dive straight into live software...', 25);
+      manifest.scenes[0].voiceover = `Here is ${projectModel.project} running in production, built directly for modern teams.`;
+      manifest.scenes[0].narrationText = manifest.scenes[0].voiceover;
+      manifest.scenes[0].duration = 4;
+      needsVoiceResynth = true;
+    }
 
-    // 3. Fast re-mix master audio
-    log('Audio Engineer', 'Re-mixing master audio tracks...', 70);
+    // 3. If technical depth requested ("make it more technical", "for developers")
+    if (updatedIntent.custom_instructions.includes('more_technical')) {
+      log('Creative Director', 'Rewriting narrative with developer-grade technical depth and architecture metrics...', 28);
+      manifest.scenes.forEach((s, idx) => {
+        if (s.type === 'product_demo' || s.type === 'feature_demo') {
+          s.voiceover = `${s.title}: Powered by reactive state pipelines, sub-millisecond execution, and automated distributed telemetry.`;
+          s.narrationText = s.voiceover;
+        }
+      });
+      needsVoiceResynth = true;
+    }
+
+    // 4. If dashboard focus requested ("show more of the dashboard")
+    if (updatedIntent.custom_instructions.includes('show_more_dashboard')) {
+      log('Creative Director', 'Expanding live telemetry and dashboard screentime...', 28);
+      const dashScene = manifest.scenes.find(s => s.type === 'product_demo' || s.id.includes('demo') || s.id.includes('workflow'));
+      if (dashScene) {
+        dashScene.duration = Math.max(dashScene.duration, 15);
+      }
+    }
+
+    // 5. If ending modified ("change the ending", "stronger cta")
+    if (updatedIntent.custom_instructions.includes('change_ending') && manifest.scenes.length > 0) {
+      const lastScene = manifest.scenes[manifest.scenes.length - 1];
+      log('Creative Director', 'Crafting high-conversion closing call to action...', 29);
+      lastScene.voiceover = `Experience the next generation of ${projectModel.project}. Deploy locally or explore the live system today.`;
+      lastScene.narrationText = lastScene.voiceover;
+      needsVoiceResynth = true;
+    }
+
+    // 6. If aspect ratio changed ("make this vertical", "make it 9:16")
+    if (updatedIntent.aspect_ratio && updatedIntent.aspect_ratio !== manifest.aspectRatio) {
+      log('Creative Director', `Switching canvas layout to ${updatedIntent.aspect_ratio}...`, 30);
+      manifest.aspectRatio = updatedIntent.aspect_ratio;
+      manifest.resolution = config.RESOLUTIONS[updatedIntent.aspect_ratio] || { width: 1080, height: 1920 };
+      needsVideoReassemble = true;
+    }
+
+    // 7. If duration changed ("make it 60 seconds")
+    if (updatedIntent.duration_seconds && Math.abs(updatedIntent.duration_seconds - manifest.duration) > 5) {
+      log('Creative Director', `Adjusting timeline duration to ${updatedIntent.duration_seconds}s...`, 32);
+      manifest.duration = updatedIntent.duration_seconds;
+      needsVideoReassemble = true;
+    }
+
+    // 8. If voice changed ("use a faster voice" or "use a female voice")
+    const voiceId = updatedIntent.voice_id || projectData.inputs.voiceId;
+
+    // Re-synthesize voice if needed
+    for (let i = 0; i < manifest.scenes.length; i++) {
+      const scene = manifest.scenes[i];
+      if (needsVoiceResynth || updatedIntent.voice_id !== projectData.inputs.voiceId) {
+        log('Voice Producer', `Re-synthesizing voice track for Scene ${i + 1}...`, 45);
+        const vResult = await this.voiceProducer.produceSceneVoice({
+          scene: { id: scene.id, title: scene.title, narrationText: scene.voiceover || scene.narrationText, targetDuration: scene.duration },
+          voiceId,
+          projectDir,
+          onProgress: (p) => log(p.agent, p.message)
+        });
+        scene.audioPath = vResult.audioPath;
+        scene.audioDuration = vResult.duration;
+      }
+    }
+
+    // Re-mix master audio
+    log('Audio Engineer', 'Re-mixing master soundtrack with updated stems...', 70);
     const totalAudioDuration = manifest.scenes.reduce((acc, s) => acc + (s.audioDuration || 5), 0);
     const masterAudio = await this.audioEngineer.produceMasterAudio({
       scenes: manifest.scenes,
@@ -352,22 +454,26 @@ class ProductionPipeline extends EventEmitter {
       onProgress: (p) => log(p.agent, p.message)
     });
 
-    // 4. Fast re-compose video
-    log('Video Editor', 'Re-compositing timeline with updated scene...', 85);
+    // Re-render final video without repeating browser exploration
+    log('Video Editor', 'Re-rendering broadcast MP4 with cached visual assets...', 85);
     const renderResult = await this.videoEditor.composeAndRender({
-      scenes: manifest.scenes,
+      scenes: manifest.scenes.map(s => ({
+        ...s,
+        narrationText: s.voiceover || s.narrationText,
+        targetDuration: s.duration
+      })),
       masterAudioPath: masterAudio.masterMixPath,
-      resolution,
+      resolution: manifest.resolution,
       projectDir,
       onProgress: (p) => log(p.agent, p.message)
     });
 
-    // 5. Re-check quality
-    log('Quality Controller', 'Inspecting regenerated MP4...', 95);
+    // Run QC
+    log('Quality Controller', 'Inspecting regenerated MP4 output...', 95);
     const qcReport = await this.qualityController.inspectMasterVideo({
       videoPath: renderResult.projectRootMp4,
       targetDuration: totalAudioDuration,
-      resolution,
+      resolution: manifest.resolution,
       projectDir,
       onProgress: (p) => log(p.agent, p.message)
     });
@@ -380,10 +486,20 @@ class ProductionPipeline extends EventEmitter {
       sizeBytes: renderResult.sizeBytes
     };
     projectData.qc = qcReport;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     fs.writeFileSync(projectJsonPath, JSON.stringify(projectData, null, 2), 'utf8');
 
-    log('Creative Director', `Selective regeneration complete for Scene ${sceneIndex + 1}!`, 100);
-    return { scene, projectData };
+    log('Creative Director', `Natural language regeneration complete! (${renderResult.duration.toFixed(1)}s broadcast MP4)`, 100);
+    return { manifest, projectData };
+  }
+
+  /**
+   * Helper to construct explicit PRD failure errors
+   */
+  wrapError(code, message) {
+    const err = new Error(message);
+    err.code = code;
+    return err;
   }
 }
 
