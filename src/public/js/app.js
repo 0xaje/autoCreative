@@ -345,10 +345,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render Script
     renderScript(projectData.manifest?.scenes || []);
 
-    // Synchronize subtitles
+    // Synchronize subtitles and timecode tracking
     activeSubtitles = [];
+    activeScenesList = [];
     let cumulativeTime = 0;
     (projectData.manifest?.scenes || []).forEach(scene => {
+      const dur = (scene.audioDuration || scene.targetDuration || 5);
+      activeScenesList.push({
+        ...scene,
+        startSec: cumulativeTime,
+        endSec: cumulativeTime + dur
+      });
+
       if (scene.subtitles && scene.subtitles.length > 0) {
         scene.subtitles.forEach(sub => {
           activeSubtitles.push({
@@ -358,20 +366,46 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         });
       }
-      cumulativeTime += (scene.audioDuration || scene.targetDuration || 5);
+      cumulativeTime += dur;
     });
 
     studioVideo.play().catch(() => {});
   }
 
-  // Synchronized Subtitle Overlay during playback
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
+  // Synchronized Subtitle Overlay, Timecode & Active Timeline Scene
   studioVideo.addEventListener('timeupdate', () => {
+    const t = studioVideo.currentTime;
+    const dur = studioVideo.duration || (currentProjectData?.finalVideo?.duration || 0);
+
+    const timecodeDisplay = document.getElementById('timecode-display');
+    if (timecodeDisplay) {
+      timecodeDisplay.textContent = `${formatTime(t)} / ${formatTime(dur)}`;
+    }
+
+    // Active scene highlighting in timeline
+    if (activeScenesList.length > 0) {
+      document.querySelectorAll('.timeline-scene-card').forEach((card, idx) => {
+        const sc = activeScenesList[idx];
+        if (sc && t >= sc.startSec && t < sc.endSec) {
+          card.classList.add('active-scene');
+        } else {
+          card.classList.remove('active-scene');
+        }
+      });
+    }
+
     if (!toggleCaptions.checked || activeSubtitles.length === 0) {
       captionOverlay.style.display = 'none';
       return;
     }
 
-    const t = studioVideo.currentTime;
     const currentSub = activeSubtitles.find(s => t >= s.startSec && t <= s.endSec);
 
     if (currentSub && currentSub.text) {
@@ -390,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     timelineScenesList.innerHTML = scenes.map((scene, idx) => `
-      <div class="timeline-scene-card" data-index="${idx}">
+      <div class="timeline-scene-card" data-index="${idx}" tabindex="0" role="button" aria-label="Seek to Scene ${idx + 1}: ${scene.title}">
         <span class="scene-num-badge">SCENE 0${idx + 1} &bull; ${(scene.audioDuration || scene.targetDuration || 0).toFixed(1)}s</span>
         <h4 class="scene-title-text">${scene.title}</h4>
         <p class="scene-narration-snippet">${scene.narrationText}</p>
@@ -403,6 +437,30 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>
       </div>
     `).join('');
+
+    // Attach click-to-seek listeners on scene cards
+    document.querySelectorAll('.timeline-scene-card').forEach((card, idx) => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-scene-regen')) return;
+        const sc = activeScenesList[idx];
+        if (sc) {
+          studioVideo.currentTime = sc.startSec;
+          studioVideo.play().catch(() => {});
+        }
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.target.closest('.btn-scene-regen')) return;
+          e.preventDefault();
+          const sc = activeScenesList[idx];
+          if (sc) {
+            studioVideo.currentTime = sc.startSec;
+            studioVideo.play().catch(() => {});
+          }
+        }
+      });
+    });
   }
 
   // Render Evidence Inspector
@@ -790,6 +848,29 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('No prior projects loaded:', e);
     }
   }
+
+  // Editorial Keyboard Shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (studioVideo.paused) {
+        studioVideo.play().catch(() => {});
+      } else {
+        studioVideo.pause();
+      }
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      studioVideo.currentTime = Math.max(0, studioVideo.currentTime - 5);
+    } else if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      studioVideo.currentTime = Math.min(studioVideo.duration || 0, studioVideo.currentTime + 5);
+    } else if (e.key === 'm' || e.key === 'M') {
+      studioVideo.muted = !studioVideo.muted;
+      showNotification(studioVideo.muted ? 'Muted' : 'Unmuted');
+    }
+  });
 
   connectWebSocket();
   loadInitialProject();
