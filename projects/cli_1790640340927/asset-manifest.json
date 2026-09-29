@@ -1,0 +1,41 @@
+{
+  "projectId": "cli_1790640340927",
+  "scenes": [
+    {
+      "id": "scene-01-hero-intro",
+      "title": "Cinematic Hook & Title",
+      "type": "motion_graphic",
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-01-hero-intro-motion.mp4"
+    },
+    {
+      "id": "scene-02-the-problem",
+      "title": "The Challenge & Architecture",
+      "type": "hybrid_callout",
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-02-the-problem-motion.mp4"
+    },
+    {
+      "id": "scene-03-live-feature-1",
+      "title": "Core Product in Action",
+      "type": "screen_recording",
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/recordings/scene-03-live-feature-1.mp4"
+    },
+    {
+      "id": "scene-04-live-feature-2",
+      "title": "Deep Dive & Real Results",
+      "type": "screen_recording",
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/recordings/scene-04-live-feature-2.mp4"
+    },
+    {
+      "id": "scene-05-outro-cta",
+      "title": "Momentum & Call to Action",
+      "type": "motion_graphic",
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-05-outro-cta-motion.mp4"
+    }
+  ],
+  "audio": {
+    "masterMix": "audio/master-mix.aac",
+    "soundtrackBed": "audio/soundtrack-bed.aac",
+    "narrationMaster": "audio/narration-master.aac"
+  },
+  "generatedAt": "2026-09-29T15:55:20.274Z"
+}

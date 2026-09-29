@@ -19,7 +19,7 @@
       "type": "motion_graphic",
       "targetDuration": 7,
       "evidenceState": "VERIFIED",
-      "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams..",
+      "narrationText": "Stop wasting engineering time on fragmented tools. Here is why PulseFlow Analytics changes everything.",
       "visualPlan": {
         "motionType": "intro_cinematic",
         "headline": "PulseFlow Analytics",
@@ -31,7 +31,7 @@
       },
       "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-01-hero-intro-voice.mp3",
       "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-01-hero-intro-sub.vtt",
-      "audioDuration": 15.408,
+      "audioDuration": 7.944,
       "subtitles": [
         {
           "startTimeStr": "00:00:00,100",
@@ -48,7 +48,8 @@
           "text": "Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams."
         }
       ],
-      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-01-hero-intro-motion.mp4"
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-01-hero-intro-motion.mp4",
+      "voiceover": "Stop wasting engineering time on fragmented tools. Here is why PulseFlow Analytics changes everything."
     },
     {
       "id": "scene-02-the-problem",
@@ -173,7 +174,7 @@
       "type": "motion_graphic",
       "targetDuration": 7,
       "evidenceState": "VERIFIED",
-      "narrationText": "Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output.",
+      "narrationText": "Experience the next generation of PulseFlow Analytics. Deploy locally or explore the live system today.",
       "visualPlan": {
         "motionType": "outro_cta",
         "headline": "Start Creating Today",
@@ -185,7 +186,7 @@
       },
       "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-05-outro-cta-voice.mp3",
       "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-05-outro-cta-sub.vtt",
-      "audioDuration": 7.344,
+      "audioDuration": 7.992,
       "subtitles": [
         {
           "startTimeStr": "00:00:00,100",
@@ -195,7 +196,8 @@
           "text": "Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output."
         }
       ],
-      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-05-outro-cta-motion.mp4"
+      "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-05-outro-cta-motion.mp4",
+      "voiceover": "Experience the next generation of PulseFlow Analytics. Deploy locally or explore the live system today."
     }
   ],
   "plannedAt": "2026-09-29T00:05:43.031Z"

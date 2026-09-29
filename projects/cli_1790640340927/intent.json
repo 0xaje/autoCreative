@@ -1,0 +1,19 @@
+{
+  "content_type": "product_demo",
+  "duration_seconds": 60,
+  "aspect_ratio": "16:9",
+  "audience": "general_technical",
+  "tone": "premium",
+  "show_real_product": true,
+  "voiceover": true,
+  "captions": true,
+  "music": true,
+  "creative_freedom": 0.35,
+  "voice_id": "en-US-ChristopherNeural",
+  "voice_preference": "male_professional",
+  "custom_instructions": [
+    "enhance_hook"
+  ],
+  "raw_prompt": "Make the opening stronger",
+  "parsed_at": "2026-09-29T00:29:55.944Z"
+}

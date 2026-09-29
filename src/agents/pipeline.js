@@ -145,6 +145,8 @@ class ProductionPipeline extends EventEmitter {
           onProgress: (p) => setStage(PROJECT_STATES.ANALYZING, p.message, 18, p.agent)
         });
         projectData.artifacts.projectModel = path.join(projectDir, 'project_model.json');
+        fs.writeFileSync(path.join(projectDir, 'understanding.json'), JSON.stringify(projectModel, null, 2), 'utf8');
+        projectData.artifacts.understanding = path.join(projectDir, 'understanding.json');
         projectData.projectModel = projectModel;
       } catch (err) {
         throw this.wrapError('LIVE_APP_UNREACHABLE', `Failed to analyze application source: ${err.message}`);
@@ -193,6 +195,18 @@ class ProductionPipeline extends EventEmitter {
       if (!targetUrl) {
         targetUrl = `file://${path.resolve(config.DEMO_APPS_DIR, 'saas-analytics', 'index.html')}`;
       }
+
+      // Save discovery.json (Section 24)
+      const discoveryData = {
+        targetUrl,
+        projectId: id,
+        projectName,
+        liveData: projectModel.liveData || {},
+        workflows: projectModel.workflows || [],
+        discoveredAt: new Date().toISOString()
+      };
+      fs.writeFileSync(path.join(projectDir, 'discovery.json'), JSON.stringify(discoveryData, null, 2), 'utf8');
+      projectData.artifacts.discovery = path.join(projectDir, 'discovery.json');
 
       const resolution = manifest.resolution;
       const completedScenes = [];
@@ -272,6 +286,42 @@ class ProductionPipeline extends EventEmitter {
         projectDir,
         onProgress: (p) => setStage(PROJECT_STATES.COMPOSING, p.message, 78, p.agent)
       });
+
+      // Save asset-manifest.json and render-config.json (Section 24)
+      const assetManifest = {
+        projectId: id,
+        scenes: completedScenes.map(s => ({
+          id: s.id,
+          title: s.title,
+          type: s.type,
+          audioPath: s.audioPath,
+          audioDuration: s.audioDuration,
+          subtitlesPath: s.subtitlesPath,
+          videoPath: s.videoPath,
+          visuals: s.visuals
+        })),
+        audio: {
+          masterMix: masterAudio.masterMixPath,
+          soundtrackBed: masterAudio.soundtrackBedPath,
+          narrationMaster: masterAudio.narrationMasterPath
+        },
+        generatedAt: new Date().toISOString()
+      };
+      fs.writeFileSync(path.join(projectDir, 'asset-manifest.json'), JSON.stringify(assetManifest, null, 2), 'utf8');
+      projectData.artifacts.assetManifest = path.join(projectDir, 'asset-manifest.json');
+
+      const renderConfig = {
+        resolution,
+        aspectRatio: userIntent.aspect_ratio || '16:9',
+        fps: 30,
+        videoCodec: 'libx264',
+        audioCodec: 'aac',
+        crf: 19,
+        preset: 'fast',
+        targetDuration: totalAudioDuration
+      };
+      fs.writeFileSync(path.join(projectDir, 'render-config.json'), JSON.stringify(renderConfig, null, 2), 'utf8');
+      projectData.artifacts.renderConfig = path.join(projectDir, 'render-config.json');
 
       // 7. Video Editor: RENDERING
       setStage(PROJECT_STATES.RENDERING, 'Composing multi-track video timeline and encoding broadcast MP4...', 82, 'Video Editor');
