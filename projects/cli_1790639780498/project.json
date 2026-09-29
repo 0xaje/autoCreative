@@ -1,0 +1,414 @@
+{
+  "id": "cli_1790639780498",
+  "createdAt": "2026-09-28T23:56:20.499Z",
+  "status": "FAILED",
+  "inputs": {
+    "githubUrl": null,
+    "liveUrl": null,
+    "localPath": "demo-apps/saas-analytics",
+    "prompt": "Create a 20-second product launch video demonstrating real live telemetry and verified features.",
+    "mode": "launch",
+    "duration": 20,
+    "aspectRatio": "16:9",
+    "voiceId": "en-US-ChristopherNeural",
+    "musicStyle": "cinematic"
+  },
+  "currentStage": "CREATIVE DIRECTOR",
+  "progressPercent": 75,
+  "artifacts": {
+    "projectJson": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/project.json",
+    "sourceAnalysis": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/source-analysis.json",
+    "evidence": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/evidence.json",
+    "sceneManifest": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/scene-manifest.json",
+    "script": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/script.json",
+    "outputMp4": null,
+    "qcReport": null
+  },
+  "logs": [
+    {
+      "timestamp": "2026-09-28T23:56:20.499Z",
+      "agent": "Creative Director",
+      "message": "Initiating Autonomous Studio Pipeline for Project [cli_1790639780498]..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.500Z",
+      "agent": "Researcher",
+      "message": "Scanning repository code, documentation, and live interface..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.501Z",
+      "agent": "Researcher",
+      "message": "Starting comprehensive source intelligence scan..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.505Z",
+      "agent": "Researcher",
+      "message": "Analyzing repository structure, documentation, and codebase..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.507Z",
+      "agent": "Researcher",
+      "message": "Synthesizing product capabilities and feature matrix..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.508Z",
+      "agent": "Researcher",
+      "message": "Source analysis completed and saved to source-analysis.json."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.509Z",
+      "agent": "Evidence Engine",
+      "message": "Cross-referencing claims against live DOM elements and codebase..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.511Z",
+      "agent": "Evidence Engine",
+      "message": "Identified 0 verified features. Unverified claims excluded."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.511Z",
+      "agent": "Creative Director",
+      "message": "Drafting story arc, scenes, and narration script for [LAUNCH] mode..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.513Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 1/5: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:20.514Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Cinematic Hook & Title\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:23.816Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 1: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:23.818Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (intro_cinematic) for \"Cinematic Hook & Title\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:35.247Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 2/5: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:35.247Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"The Challenge & Architecture\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:38.747Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 2: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:38.748Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (problem_solution_split) for \"The Challenge & Architecture\" (10.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:48.799Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 3/5: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:48.800Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Core Product in Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:51.017Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 3: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:56:51.018Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Core Product in Action\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:03.731Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.6s real footage: scene-03-live-feature-1.mp4"
+    },
+    {
+      "timestamp": "2026-09-28T23:57:03.732Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 4/5: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:03.737Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Deep Dive & Real Results\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:06.550Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 4: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:06.551Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Deep Dive & Real Results\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:17.998Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.8s real footage: scene-04-live-feature-2.mp4"
+    },
+    {
+      "timestamp": "2026-09-28T23:57:17.999Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 5/5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:17.999Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Momentum & Call to Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:20.666Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:20.667Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (outro_cta) for \"Momentum & Call to Action\" (8.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:31.071Z",
+      "agent": "Audio Engineer",
+      "message": "Composing soundtrack and applying smart sidechain ducking (42.0s)..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:31.072Z",
+      "agent": "Audio Engineer",
+      "message": "Composing background soundtrack (cinematic) for 42.0s timeline..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:33.200Z",
+      "agent": "Audio Engineer",
+      "message": "Applying smart audio ducking (sidechain compression) and mixing master track..."
+    },
+    {
+      "timestamp": "2026-09-28T23:57:33.232Z",
+      "agent": "Creative Director",
+      "message": "Production halted due to error: FFmpeg exited with code 1.\nArgs: -y -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-01-hero-intro-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-02-the-problem-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-voice.mp3 -filter_complex [0:a][1:a][2:a][3:a][4:a]concat=n=5:v=0:a=1[voice] -c:a aac -b:a 192k /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/narration-master.aac\nStderr:\n0 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x672be80] Estimating duration from bitrate, this may be inaccurate\nInput #2, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-voice.mp3':\n  Duration: 00:00:08.42, start: 0.000000, bitrate: 48 kb/s\n    Stream #2:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x673bf00] Estimating duration from bitrate, this may be inaccurate\nInput #3, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-voice.mp3':\n  Duration: 00:00:08.23, start: 0.000000, bitrate: 48 kb/s\n    Stream #3:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x6762b80] Estimating duration from bitrate, this may be inaccurate\nInput #4, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-voice.mp3':\n  Duration: 00:00:07.18, start: 0.000000, bitrate: 48 kb/s\n    Stream #4:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\nFilter concat has an unconnected output\n"
+    }
+  ],
+  "evidenceSummary": {
+    "total": 4,
+    "verified": 0,
+    "partial": 4,
+    "unverified": 0,
+    "future": 0
+  },
+  "manifest": {
+    "projectTitle": "Saas Analytics - Launch Video",
+    "productName": "Saas Analytics",
+    "tagline": "Autonomous Creative Solution",
+    "creativeMode": "launch",
+    "modeDescription": "Cinematic introduction with real product footage",
+    "aspectRatio": "16:9",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "targetTotalDuration": 20,
+    "scenesCount": 5,
+    "scenes": [
+      {
+        "id": "scene-01-hero-intro",
+        "index": 0,
+        "title": "Cinematic Hook & Title",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing Saas Analytics, Autonomous Creative Solution.",
+        "visualPlan": {
+          "motionType": "intro_cinematic",
+          "headline": "Saas Analytics",
+          "subline": "Autonomous Creative Solution",
+          "colorAccent": "#6366f1"
+        },
+        "overlay": {
+          "badge": "PRODUCT LAUNCH"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-01-hero-intro-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-01-hero-intro-sub.vtt",
+        "audioDuration": 8.424,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,975",
+            "startMs": 100,
+            "endMs": 3975,
+            "text": "Every great breakthrough begins with a simpler way to build."
+          },
+          {
+            "startTimeStr": "00:00:03,925",
+            "endTimeStr": "00:00:08,375",
+            "startMs": 3925,
+            "endMs": 8375,
+            "text": "Introducing Saas Analytics, Autonomous Creative Solution."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/assets/scene-01-hero-intro-motion.mp4"
+      },
+      {
+        "id": "scene-02-the-problem",
+        "index": 1,
+        "title": "The Challenge & Architecture",
+        "type": "hybrid_callout",
+        "targetDuration": 4,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Traditional workflows are fragmented and manual. Saas Analytics reimagines the entire process with an intuitive, unified platform.",
+        "visualPlan": {
+          "motionType": "problem_solution_split",
+          "headline": "The Problem: Fragmented Tools",
+          "subline": "The Solution: Autonomous Unified Experience"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Architecture",
+            "subtitle": "Automated & Cohesive"
+          },
+          "badge": "ARCHITECTURE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-02-the-problem-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-02-the-problem-sub.vtt",
+        "audioDuration": 9.768,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,725",
+            "startMs": 100,
+            "endMs": 3725,
+            "text": "Traditional workflows are fragmented and manual."
+          },
+          {
+            "startTimeStr": "00:00:03,675",
+            "endTimeStr": "00:00:09,712",
+            "startMs": 3675,
+            "endMs": 9712,
+            "text": "Saas Analytics reimagines the entire process with an intuitive, unified platform."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/assets/scene-02-the-problem-motion.mp4"
+      },
+      {
+        "id": "scene-03-live-feature-1",
+        "index": 2,
+        "title": "Core Product in Action",
+        "type": "screen_recording",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Here is the actual application at work. Notice how effortlessly you can navigate and leverage Real-time automated workflow.",
+        "visualPlan": {
+          "interaction": "explore_primary_feature",
+          "targetSelector": "nav a, button.btn-primary",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Live Capability",
+            "subtitle": "Real-time automated workflow"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-sub.vtt",
+        "audioDuration": 8.424,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,087",
+            "startMs": 100,
+            "endMs": 3087,
+            "text": "Here is the actual application at work."
+          },
+          {
+            "startTimeStr": "00:00:03,037",
+            "endTimeStr": "00:00:08,362",
+            "startMs": 3037,
+            "endMs": 8362,
+            "text": "Notice how effortlessly you can navigate and leverage Real-time automated workflow."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/recordings/scene-03-live-feature-1.mp4"
+      },
+      {
+        "id": "scene-04-live-feature-2",
+        "index": 3,
+        "title": "Deep Dive & Real Results",
+        "type": "screen_recording",
+        "targetDuration": 6,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Behind the scenes, Intuitive modern interface delivers dependable performance, validated against real-world production metrics.",
+        "visualPlan": {
+          "interaction": "deep_dive_feature",
+          "targetSelector": "input, select, .metric-card",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Performance Engine",
+            "subtitle": "Intuitive modern interface"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-sub.vtt",
+        "audioDuration": 8.232,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:08,225",
+            "startMs": 100,
+            "endMs": 8225,
+            "text": "Behind the scenes, Intuitive modern interface delivers dependable performance, validated against real-world production metrics."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/recordings/scene-04-live-feature-2.mp4"
+      },
+      {
+        "id": "scene-05-outro-cta",
+        "index": 4,
+        "title": "Momentum & Call to Action",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Whether you are shipping for clients or building your own vision, Saas Analytics is ready to elevate your creative output.",
+        "visualPlan": {
+          "motionType": "outro_cta",
+          "headline": "Start Creating Today",
+          "ctaText": "Visit Live Application",
+          "url": "Repository & Live Deployment Available"
+        },
+        "overlay": {
+          "badge": "GET STARTED"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-sub.vtt",
+        "audioDuration": 7.176,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:07,162",
+            "startMs": 100,
+            "endMs": 7162,
+            "text": "Whether you are shipping for clients or building your own vision, Saas Analytics is ready to elevate your creative output."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790639780498/assets/scene-05-outro-cta-motion.mp4"
+      }
+    ],
+    "plannedAt": "2026-09-28T23:56:20.512Z"
+  },
+  "error": "FFmpeg exited with code 1.\nArgs: -y -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-01-hero-intro-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-02-the-problem-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-voice.mp3 -i /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-voice.mp3 -filter_complex [0:a][1:a][2:a][3:a][4:a]concat=n=5:v=0:a=1[voice] -c:a aac -b:a 192k /home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/narration-master.aac\nStderr:\n0 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x672be80] Estimating duration from bitrate, this may be inaccurate\nInput #2, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-03-live-feature-1-voice.mp3':\n  Duration: 00:00:08.42, start: 0.000000, bitrate: 48 kb/s\n    Stream #2:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x673bf00] Estimating duration from bitrate, this may be inaccurate\nInput #3, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-04-live-feature-2-voice.mp3':\n  Duration: 00:00:08.23, start: 0.000000, bitrate: 48 kb/s\n    Stream #3:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\n[mp3 @ 0x6762b80] Estimating duration from bitrate, this may be inaccurate\nInput #4, mp3, from '/home/oyeolorun/auto-creative/projects/cli_1790639780498/audio/scene-05-outro-cta-voice.mp3':\n  Duration: 00:00:07.18, start: 0.000000, bitrate: 48 kb/s\n    Stream #4:0: Audio: mp3, 24000 Hz, mono, fltp, 48 kb/s\nFilter concat has an unconnected output\n"
+}

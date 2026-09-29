@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Creative Production Agent — Studio Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/studio.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="bg-mesh"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <!-- Studio Header -->
+  <header class="studio-header">
+    <div class="header-brand">
+      <div class="logo-mark">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polygon points="5 3 19 12 5 21 5 3" fill="url(#brandGrad)" stroke="none"/>
+          <defs>
+            <linearGradient id="brandGrad" x1="5" y1="3" x2="19" y2="21" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#818cf8"/>
+              <stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">AUTOCREATIVE</h1>
+        <span class="brand-subtitle">Autonomous Creative Production Studio</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="status-indicator" id="ws-status">
+        <span class="pulse-dot"></span>
+        <span class="status-text">Studio Online</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-demo" id="btn-quick-demo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Instant 1-Click Demo
+      </button>
+      <a href="https://github.com" target="_blank" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Docs
+      </a>
+    </div>
+  </header>
+
+  <!-- Studio Main Content -->
+  <main class="studio-layout">
+    <!-- LEFT PANEL: Creative Director Controls -->
+    <section class="control-panel">
+      <div class="panel-header">
+        <div class="panel-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <div>
+          <h2>Creative Director</h2>
+          <p>Define source inputs & production strategy</p>
+        </div>
+      </div>
+
+      <form id="production-form">
+        <!-- Source Inputs -->
+        <div class="form-group">
+          <label>Source Inputs (Provide at least one)</label>
+          <div class="input-with-icon">
+            <span class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </span>
+            <input type="text" id="input-github" placeholder="GitHub Repository URL (e.g. https://github.com/org/repo)" value="">
+          </div>
+
+          <div class="input-with-icon" style="margin-top: 8px;">
+            <span class="icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </span>
+            <input type="text" id="input-live" placeholder="Live Application URL (or leave blank for demo app)" value="">
+          </div>
+        </div>
+
+        <!-- Creative Request Prompt -->
+        <div class="form-group">
+          <label for="input-prompt">Natural-Language Creative Request</label>
+          <textarea id="input-prompt" rows="3" placeholder="Describe the desired video...">Create a 60-second professional launch video. Showcase the real product, demonstrate the live workflows, highlight verified capabilities, and make the ending feel premium.</textarea>
+        </div>
+
+        <!-- Creative Mode Selector -->
+        <div class="form-group">
+          <label>Creative Strategy Mode</label>
+          <div class="modes-grid">
+            <label class="mode-card active">
+              <input type="radio" name="mode" value="launch" checked>
+              <div class="mode-title">Launch Video</div>
+              <div class="mode-desc">Cinematic intro with real product footage</div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="demo">
+              <div class="mode-title">Product Demo</div>
+              <div class="mode-desc">Feature-focused hands-on demonstration</div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="presentation">
+              <div class="mode-title">Presentation</div>
+              <div class="mode-desc">Architectural & solution overview</div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="explainer">
+              <div class="mode-title">Explainer</div>
+              <div class="mode-desc">Conceptual & technical breakdown</div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="tutorial">
+              <div class="mode-title">Tutorial</div>
+              <div class="mode-desc">Step-by-step actionable walkthrough</div>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="social_short">
+              <div class="mode-title">Social Short</div>
+              <div class="mode-desc">Vertical high-hook 30s version</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Duration & Aspect Ratio -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <div class="label-with-val">
+              <label>Target Duration</label>
+              <span class="value-badge" id="duration-val">60s</span>
+            </div>
+            <input type="range" id="input-duration" min="30" max="120" step="15" value="60">
+          </div>
+
+          <div class="form-group flex-1">
+            <label>Aspect Ratio</label>
+            <div class="ratio-switch">
+              <button type="button" class="btn-ratio active" data-ratio="16:9">16:9 Cinema</button>
+              <button type="button" class="btn-ratio" data-ratio="9:16">9:16 Short</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice & Music Style -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Neural Voice Producer</label>
+            <select id="select-voice">
+              <option value="en-US-ChristopherNeural">Christopher (Tech & Founder)</option>
+              <option value="en-US-JennyNeural">Jenny (Energetic & Dynamic)</option>
+              <option value="en-US-GuyNeural">Guy (Casual & Natural)</option>
+              <option value="en-US-AriaNeural">Aria (Presenter & Polished)</option>
+              <option value="en-GB-SoniaNeural">Sonia (Sophisticated British)</option>
+            </select>
+          </div>
+
+          <div class="form-group flex-1">
+            <label>Soundtrack Style</label>
+            <select id="select-music">
+              <option value="cinematic">Cinematic Ambient Pads</option>
+              <option value="upbeat">Upbeat Harmonic Tech</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Master Action Button -->
+        <button type="submit" class="btn btn-master-produce" id="btn-submit">
+          <span class="btn-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </span>
+          PRODUCE BROADCAST MP4
+        </button>
+      </form>
+    </section>
+
+    <!-- RIGHT PANEL: Live Pipeline Flowchart, Video Player, Timeline, Evidence -->
+    <section class="stage-panel">
+      <!-- PIPELINE FLOWCHART -->
+      <div class="pipeline-card">
+        <div class="pipeline-header">
+          <div class="pipeline-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Autonomous Studio Production Engine</span>
+          </div>
+          <div class="pipeline-progress-badge" id="pipeline-progress-text">IDLE (0%)</div>
+        </div>
+
+        <!-- Progress bar line -->
+        <div class="progress-track">
+          <div class="progress-fill" id="pipeline-progress-bar" style="width: 0%;"></div>
+        </div>
+
+        <!-- Studio Roles Flow Nodes -->
+        <div class="pipeline-nodes">
+          <div class="node" data-role="CREATIVE DIRECTOR" id="node-director">
+            <div class="node-icon">🎬</div>
+            <div class="node-title">Creative Director</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="RESEARCHER" id="node-researcher">
+            <div class="node-icon">🔍</div>
+            <div class="node-title">Researcher</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="EVIDENCE ENGINE" id="node-evidence">
+            <div class="node-icon">🛡️</div>
+            <div class="node-title">Evidence Engine</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="SCREEN RECORDER" id="node-recorder">
+            <div class="node-icon">📹</div>
+            <div class="node-title">Screen Recorder</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="VOICE PRODUCER" id="node-voice">
+            <div class="node-icon">🎙️</div>
+            <div class="node-title">Voice Producer</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="MOTION DESIGNER" id="node-motion">
+            <div class="node-icon">✨</div>
+            <div class="node-title">Motion Designer</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="AUDIO ENGINEER" id="node-audio">
+            <div class="node-icon">🎵</div>
+            <div class="node-title">Audio Engineer</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="VIDEO EDITOR" id="node-editor">
+            <div class="node-icon">🎞️</div>
+            <div class="node-title">Video Editor</div>
+            <div class="node-status">Standby</div>
+          </div>
+          <div class="node" data-role="QUALITY CONTROLLER" id="node-qc">
+            <div class="node-icon">✅</div>
+            <div class="node-title">Quality Controller</div>
+            <div class="node-status">Standby</div>
+          </div>
+        </div>
+
+        <!-- Live Pipeline Activity Feed Ticker -->
+        <div class="pipeline-feed">
+          <span class="feed-tag">LIVE FEED:</span>
+          <span class="feed-text" id="live-feed-ticker">Studio initialized. Ready to execute production pipeline.</span>
+        </div>
+      </div>
+
+      <!-- MAIN VIDEO THEATER -->
+      <div class="theater-card" id="theater-card">
+        <div class="theater-header">
+          <div class="video-info">
+            <h3 id="current-project-title">No Video Rendered Yet</h3>
+            <span class="video-badge" id="qc-score-badge">WAITING</span>
+          </div>
+          <div class="theater-actions">
+            <label class="caption-toggle">
+              <input type="checkbox" id="toggle-captions" checked>
+              <span>Captions</span>
+            </label>
+            <a href="#" class="btn btn-download disabled" id="btn-download-mp4" download="production-master.mp4">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download MP4
+            </a>
+          </div>
+        </div>
+
+        <div class="video-wrapper" id="video-wrapper">
+          <video id="studio-video" preload="metadata" playsinline controls>
+            <source src="" type="video/mp4" id="video-source">
+            Your browser does not support HTML5 video.
+          </video>
+          <!-- Dynamic caption overlay -->
+          <div class="caption-overlay" id="caption-overlay" style="display: none;"></div>
+          <!-- Placeholder when idle -->
+          <div class="video-placeholder" id="video-placeholder">
+            <div class="placeholder-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <h4>Autonomous Studio Player</h4>
+            <p>Click "Produce Broadcast MP4" or "Instant 1-Click Demo" to launch the studio pipeline.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS: Multi-Track Timeline | Evidence Inspector | Production Artifacts | Script -->
+      <div class="tabs-container">
+        <div class="tabs-nav">
+          <button class="tab-item active" data-tab="tab-timeline">Multi-Track Timeline & Regeneration</button>
+          <button class="tab-item" data-tab="tab-evidence">Evidence State Inspector</button>
+          <button class="tab-item" data-tab="tab-script">Production Script</button>
+          <button class="tab-item" data-tab="tab-artifacts">Studio Artifacts</button>
+        </div>
+
+        <!-- TAB 1: Multi-Track Timeline -->
+        <div class="tab-content active" id="tab-timeline">
+          <div class="timeline-view" id="timeline-scenes-list">
+            <div class="timeline-empty">Scenes will populate here during production.</div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Evidence Inspector -->
+        <div class="tab-content" id="tab-evidence">
+          <div class="evidence-toolbar">
+            <div class="evidence-stats" id="evidence-stats-pills">
+              <span class="pill verified">0 Verified</span>
+              <span class="pill partial">0 Partial</span>
+              <span class="pill unverified">0 Unverified (Excluded)</span>
+              <span class="pill future">0 Future Roadmap</span>
+            </div>
+            <div class="evidence-filter">
+              <button class="filter-btn active" data-filter="ALL">All Claims</button>
+              <button class="filter-btn" data-filter="VERIFIED">Verified Only</button>
+            </div>
+          </div>
+          <div class="evidence-table-container">
+            <table class="evidence-table">
+              <thead>
+                <tr>
+                  <th>Product Claim</th>
+                  <th>Evidence State</th>
+                  <th>Confidence</th>
+                  <th>Verification Rationale</th>
+                  <th>Visual Strategy</th>
+                </tr>
+              </thead>
+              <tbody id="evidence-table-body">
+                <tr><td colspan="5" class="empty-cell">Run a production pipeline to evaluate claims against live DOM evidence.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: Script -->
+        <div class="tab-content" id="tab-script">
+          <div class="script-view" id="script-container">
+            <p class="empty-cell">Script will appear here after the Creative Director plans the production.</p>
+          </div>
+        </div>
+
+        <!-- TAB 4: Artifacts -->
+        <div class="tab-content" id="tab-artifacts">
+          <div class="artifacts-grid" id="artifacts-grid">
+            <div class="artifact-card">
+              <div class="art-icon">📄</div>
+              <div class="art-title">project.json</div>
+              <div class="art-desc">Master project manifest & logs</div>
+            </div>
+            <div class="artifact-card">
+              <div class="art-icon">🔍</div>
+              <div class="art-title">source-analysis.json</div>
+              <div class="art-desc">Synthesized repository & DOM data</div>
+            </div>
+            <div class="artifact-card">
+              <div class="art-icon">🛡️</div>
+              <div class="art-title">evidence.json</div>
+              <div class="art-desc">Classified feature evidence states</div>
+            </div>
+            <div class="artifact-card">
+              <div class="art-icon">🎬</div>
+              <div class="art-title">scene-manifest.json</div>
+              <div class="art-desc">Scene breakdown & visual plans</div>
+            </div>
+            <div class="artifact-card">
+              <div class="art-icon">📝</div>
+              <div class="art-title">script.json</div>
+              <div class="art-desc">Full narration script with timestamps</div>
+            </div>
+            <div class="artifact-card">
+              <div class="art-icon">✅</div>
+              <div class="art-title">qc-report.json</div>
+              <div class="art-desc">Quality control validation & codecs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- SELECTIVE REGENERATION MODAL -->
+  <div class="modal-backdrop" id="regen-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="regen-modal-title">Regenerate Scene</h3>
+          <p>Update narration or re-record this scene without rebuilding unaffected scenes</p>
+        </div>
+        <button class="btn-close" id="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="regen-scene-index" value="0">
+        <div class="form-group">
+          <label>Narration Script Text</label>
+          <textarea id="regen-narration-text" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="regen-rerecord-footage" checked>
+            <span>Re-record live application footage with virtual cursor</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-regen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Regenerate Scene (Fast)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

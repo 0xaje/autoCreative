@@ -1,0 +1,645 @@
+{
+  "id": "cli_1790640082309",
+  "createdAt": "2026-09-29T00:01:22.310Z",
+  "status": "COMPLETED",
+  "inputs": {
+    "githubUrl": null,
+    "liveUrl": null,
+    "localPath": "demo-apps/saas-analytics",
+    "prompt": "Create a 20-second product launch video demonstrating real live telemetry and verified features.",
+    "mode": "launch",
+    "duration": 20,
+    "aspectRatio": "16:9",
+    "voiceId": "en-US-ChristopherNeural",
+    "musicStyle": "cinematic"
+  },
+  "currentStage": "CREATIVE DIRECTOR",
+  "progressPercent": 100,
+  "artifacts": {
+    "projectJson": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/project.json",
+    "sourceAnalysis": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/source-analysis.json",
+    "evidence": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/evidence.json",
+    "sceneManifest": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/scene-manifest.json",
+    "script": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/script.json",
+    "outputMp4": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/output.mp4",
+    "qcReport": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/qc-report.json"
+  },
+  "logs": [
+    {
+      "timestamp": "2026-09-29T00:01:22.311Z",
+      "agent": "Creative Director",
+      "message": "Initiating Autonomous Studio Pipeline for Project [cli_1790640082309]..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.312Z",
+      "agent": "Researcher",
+      "message": "Scanning repository code, documentation, and live interface..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.313Z",
+      "agent": "Researcher",
+      "message": "Starting comprehensive source intelligence scan..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.314Z",
+      "agent": "Researcher",
+      "message": "Analyzing repository structure, documentation, and codebase..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.316Z",
+      "agent": "Researcher",
+      "message": "Synthesizing product capabilities and feature matrix..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.318Z",
+      "agent": "Researcher",
+      "message": "Source analysis completed and saved to source-analysis.json."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.318Z",
+      "agent": "Evidence Engine",
+      "message": "Cross-referencing claims against live DOM elements and codebase..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.321Z",
+      "agent": "Evidence Engine",
+      "message": "Identified 0 verified features. Unverified claims excluded."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.321Z",
+      "agent": "Creative Director",
+      "message": "Drafting story arc, scenes, and narration script for [LAUNCH] mode..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.324Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 1/5: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:22.325Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Cinematic Hook & Title\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:24.840Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 1: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:24.842Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (intro_cinematic) for \"Cinematic Hook & Title\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:36.385Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 2/5: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:36.386Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"The Challenge & Architecture\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:39.687Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 2: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:39.688Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (problem_solution_split) for \"The Challenge & Architecture\" (10.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:49.935Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 3/5: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:49.936Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Core Product in Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:52.468Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 3: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:01:52.472Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Core Product in Action\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:04.200Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.6s real footage: scene-03-live-feature-1.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:02:04.201Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 4/5: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:04.206Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Deep Dive & Real Results\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:07.227Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 4: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:07.228Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Deep Dive & Real Results\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:18.639Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.7s real footage: scene-04-live-feature-2.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:02:18.640Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 5/5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:18.645Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Momentum & Call to Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:21.616Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:21.617Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (outro_cta) for \"Momentum & Call to Action\" (8.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:32.039Z",
+      "agent": "Audio Engineer",
+      "message": "Composing soundtrack and applying smart sidechain ducking (42.0s)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:32.040Z",
+      "agent": "Audio Engineer",
+      "message": "Composing background soundtrack (cinematic) for 42.0s timeline..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:34.138Z",
+      "agent": "Audio Engineer",
+      "message": "Applying smart audio ducking (sidechain compression) and mixing master track..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:36.035Z",
+      "agent": "Video Editor",
+      "message": "Composing multi-track video timeline and rendering master broadcast MP4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:36.037Z",
+      "agent": "Video Editor",
+      "message": "Assembling multi-scene timeline (5 scenes) at 1920x1080..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:36.041Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 1/5 (\"Cinematic Hook & Title\") to 8.4s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:39.430Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 2/5 (\"The Challenge & Architecture\") to 9.8s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:43.553Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 3/5 (\"Core Product in Action\") to 8.4s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:47.190Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 4/5 (\"Deep Dive & Real Results\") to 8.2s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:50.689Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 5/5 (\"Momentum & Call to Action\") to 7.2s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:02:53.230Z",
+      "agent": "Video Editor",
+      "message": "Stitching synchronized scene tracks and applying color grading..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:06.650Z",
+      "agent": "Video Editor",
+      "message": "Muxing master ducked audio track with 1080p H.264 stream..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:07.594Z",
+      "agent": "Video Editor",
+      "message": "Successfully rendered final broadcast MP4 (42.1s, 1.25 MB)"
+    },
+    {
+      "timestamp": "2026-09-29T00:03:07.595Z",
+      "agent": "Quality Controller",
+      "message": "Inspecting video codecs, stream sync, bitrate, and playback health..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:07.596Z",
+      "agent": "Quality Controller",
+      "message": "Inspecting master video stream integrity for output.mp4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:07.645Z",
+      "agent": "Quality Controller",
+      "message": "Quality Control Verdict: PASS (100/100 score). Video is verified playable."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:07.646Z",
+      "agent": "Creative Director",
+      "message": "Production complete! Broadcast MP4 delivered: output.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:03:34.055Z",
+      "agent": "[REGEN] Creative Director",
+      "message": "Starting selective regeneration for Scene 3: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:34.059Z",
+      "agent": "[REGEN] Voice Producer",
+      "message": "Re-synthesizing voice for Scene 3..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:34.060Z",
+      "agent": "[REGEN] Voice Producer",
+      "message": "Synthesizing neural voice for \"Core Product in Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:36.982Z",
+      "agent": "[REGEN] Screen Recorder",
+      "message": "Re-recording footage for Scene 3..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:36.983Z",
+      "agent": "[REGEN] Screen Recorder",
+      "message": "Recording real application footage for \"Core Product in Action\" (7.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:47.454Z",
+      "agent": "[REGEN] Screen Recorder",
+      "message": "Captured 1.4s real footage: scene-03-live-feature-1.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:03:47.455Z",
+      "agent": "[REGEN] Audio Engineer",
+      "message": "Re-mixing master audio tracks..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:47.456Z",
+      "agent": "[REGEN] Audio Engineer",
+      "message": "Composing background soundtrack (cinematic) for 40.4s timeline..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:49.359Z",
+      "agent": "[REGEN] Audio Engineer",
+      "message": "Applying smart audio ducking (sidechain compression) and mixing master track..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:50.961Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Re-compositing timeline with updated scene..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:50.962Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Assembling multi-scene timeline (5 scenes) at 1920x1080..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:50.963Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Synchronizing Scene 1/5 (\"Cinematic Hook & Title\") to 8.4s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:54.104Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Synchronizing Scene 2/5 (\"The Challenge & Architecture\") to 9.8s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:03:58.077Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Synchronizing Scene 3/5 (\"Core Product in Action\") to 6.8s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:01.373Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Synchronizing Scene 4/5 (\"Deep Dive & Real Results\") to 8.2s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:04.854Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Synchronizing Scene 5/5 (\"Momentum & Call to Action\") to 7.2s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:07.072Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Stitching synchronized scene tracks and applying color grading..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:19.370Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Muxing master ducked audio track with 1080p H.264 stream..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:20.195Z",
+      "agent": "[REGEN] Video Editor",
+      "message": "Successfully rendered final broadcast MP4 (40.5s, 1.23 MB)"
+    },
+    {
+      "timestamp": "2026-09-29T00:04:20.195Z",
+      "agent": "[REGEN] Quality Controller",
+      "message": "Inspecting regenerated MP4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:20.195Z",
+      "agent": "[REGEN] Quality Controller",
+      "message": "Inspecting master video stream integrity for output.mp4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:04:20.234Z",
+      "agent": "[REGEN] Quality Controller",
+      "message": "Quality Control Verdict: PASS (100/100 score). Video is verified playable."
+    }
+  ],
+  "evidenceSummary": {
+    "total": 4,
+    "verified": 0,
+    "partial": 4,
+    "unverified": 0,
+    "future": 0
+  },
+  "manifest": {
+    "projectTitle": "Saas Analytics - Launch Video",
+    "productName": "Saas Analytics",
+    "tagline": "Autonomous Creative Solution",
+    "creativeMode": "launch",
+    "modeDescription": "Cinematic introduction with real product footage",
+    "aspectRatio": "16:9",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "targetTotalDuration": 20,
+    "scenesCount": 5,
+    "scenes": [
+      {
+        "id": "scene-01-hero-intro",
+        "index": 0,
+        "title": "Cinematic Hook & Title",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing Saas Analytics, Autonomous Creative Solution.",
+        "visualPlan": {
+          "motionType": "intro_cinematic",
+          "headline": "Saas Analytics",
+          "subline": "Autonomous Creative Solution",
+          "colorAccent": "#6366f1"
+        },
+        "overlay": {
+          "badge": "PRODUCT LAUNCH"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-01-hero-intro-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-01-hero-intro-sub.vtt",
+        "audioDuration": 8.424,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,975",
+            "startMs": 100,
+            "endMs": 3975,
+            "text": "Every great breakthrough begins with a simpler way to build."
+          },
+          {
+            "startTimeStr": "00:00:03,925",
+            "endTimeStr": "00:00:08,375",
+            "startMs": 3925,
+            "endMs": 8375,
+            "text": "Introducing Saas Analytics, Autonomous Creative Solution."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/assets/scene-01-hero-intro-motion.mp4"
+      },
+      {
+        "id": "scene-02-the-problem",
+        "index": 1,
+        "title": "The Challenge & Architecture",
+        "type": "hybrid_callout",
+        "targetDuration": 4,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Traditional workflows are fragmented and manual. Saas Analytics reimagines the entire process with an intuitive, unified platform.",
+        "visualPlan": {
+          "motionType": "problem_solution_split",
+          "headline": "The Problem: Fragmented Tools",
+          "subline": "The Solution: Autonomous Unified Experience"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Architecture",
+            "subtitle": "Automated & Cohesive"
+          },
+          "badge": "ARCHITECTURE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-02-the-problem-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-02-the-problem-sub.vtt",
+        "audioDuration": 9.768,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,725",
+            "startMs": 100,
+            "endMs": 3725,
+            "text": "Traditional workflows are fragmented and manual."
+          },
+          {
+            "startTimeStr": "00:00:03,675",
+            "endTimeStr": "00:00:09,712",
+            "startMs": 3675,
+            "endMs": 9712,
+            "text": "Saas Analytics reimagines the entire process with an intuitive, unified platform."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/assets/scene-02-the-problem-motion.mp4"
+      },
+      {
+        "id": "scene-03-live-feature-1",
+        "index": 2,
+        "title": "Core Product in Action",
+        "type": "screen_recording",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Here is the actual application at work. Notice how effortlessly you can navigate and leverage Real-time automated workflow.",
+        "visualPlan": {
+          "interaction": "explore_primary_feature",
+          "targetSelector": "nav a, button.btn-primary",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Live Capability",
+            "subtitle": "Real-time automated workflow"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-03-live-feature-1-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-03-live-feature-1-sub.vtt",
+        "audioDuration": 8.424,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,087",
+            "startMs": 100,
+            "endMs": 3087,
+            "text": "Here is the actual application at work."
+          },
+          {
+            "startTimeStr": "00:00:03,037",
+            "endTimeStr": "00:00:08,362",
+            "startMs": 3037,
+            "endMs": 8362,
+            "text": "Notice how effortlessly you can navigate and leverage Real-time automated workflow."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/recordings/scene-03-live-feature-1.mp4"
+      },
+      {
+        "id": "scene-04-live-feature-2",
+        "index": 3,
+        "title": "Deep Dive & Real Results",
+        "type": "screen_recording",
+        "targetDuration": 6,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Behind the scenes, Intuitive modern interface delivers dependable performance, validated against real-world production metrics.",
+        "visualPlan": {
+          "interaction": "deep_dive_feature",
+          "targetSelector": "input, select, .metric-card",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Performance Engine",
+            "subtitle": "Intuitive modern interface"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-04-live-feature-2-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-04-live-feature-2-sub.vtt",
+        "audioDuration": 8.232,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:08,225",
+            "startMs": 100,
+            "endMs": 8225,
+            "text": "Behind the scenes, Intuitive modern interface delivers dependable performance, validated against real-world production metrics."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/recordings/scene-04-live-feature-2.mp4"
+      },
+      {
+        "id": "scene-05-outro-cta",
+        "index": 4,
+        "title": "Momentum & Call to Action",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Whether you are shipping for clients or building your own vision, Saas Analytics is ready to elevate your creative output.",
+        "visualPlan": {
+          "motionType": "outro_cta",
+          "headline": "Start Creating Today",
+          "ctaText": "Visit Live Application",
+          "url": "Repository & Live Deployment Available"
+        },
+        "overlay": {
+          "badge": "GET STARTED"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-05-outro-cta-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/audio/scene-05-outro-cta-sub.vtt",
+        "audioDuration": 7.176,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:07,162",
+            "startMs": 100,
+            "endMs": 7162,
+            "text": "Whether you are shipping for clients or building your own vision, Saas Analytics is ready to elevate your creative output."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/assets/scene-05-outro-cta-motion.mp4"
+      }
+    ],
+    "plannedAt": "2026-09-29T00:01:22.323Z"
+  },
+  "qc": {
+    "verdict": "PASS",
+    "qualityScore": 100,
+    "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/output.mp4",
+    "inspectedAt": "2026-09-29T00:04:20.234Z",
+    "metadata": {
+      "durationSeconds": 40.5,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioChannels": 1,
+      "sizeBytes": 1291975,
+      "bitrate": 255204
+    },
+    "checks": [
+      {
+        "name": "File Size Integrity",
+        "pass": true,
+        "actual": "1.23 MB",
+        "expected": "> 0.1 MB"
+      },
+      {
+        "name": "Video Stream Present",
+        "pass": true,
+        "actual": "h264",
+        "expected": "h264"
+      },
+      {
+        "name": "Audio Stream Present",
+        "pass": true,
+        "actual": "aac",
+        "expected": "aac"
+      },
+      {
+        "name": "Resolution Match",
+        "pass": true,
+        "actual": "1920x1080",
+        "expected": "1920x1080"
+      },
+      {
+        "name": "Duration Calibration",
+        "pass": true,
+        "actual": "40.5s",
+        "expected": "~40.4s (± 35%)"
+      }
+    ]
+  },
+  "completedAt": "2026-09-29T00:03:07.646Z",
+  "finalVideo": {
+    "path": "/home/oyeolorun/auto-creative/projects/cli_1790640082309/output.mp4",
+    "duration": 40.5,
+    "width": 1920,
+    "height": 1080,
+    "sizeBytes": 1291975
+  }
+}

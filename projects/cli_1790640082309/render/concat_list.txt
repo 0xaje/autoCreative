@@ -1,0 +1,5 @@
+file '/home/oyeolorun/auto-creative/projects/cli_1790640082309/render/norm-scene-01-hero-intro.mp4'
+file '/home/oyeolorun/auto-creative/projects/cli_1790640082309/render/norm-scene-02-the-problem.mp4'
+file '/home/oyeolorun/auto-creative/projects/cli_1790640082309/render/norm-scene-03-live-feature-1.mp4'
+file '/home/oyeolorun/auto-creative/projects/cli_1790640082309/render/norm-scene-04-live-feature-2.mp4'
+file '/home/oyeolorun/auto-creative/projects/cli_1790640082309/render/norm-scene-05-outro-cta.mp4'

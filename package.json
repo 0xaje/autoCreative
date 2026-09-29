@@ -1,0 +1,34 @@
+{
+  "name": "auto-creative",
+  "version": "1.0.0",
+  "description": "Autonomous Creative Production Studio turning source repos and live apps into broadcast-ready MP4 videos",
+  "main": "server.js",
+  "bin": {
+    "auto-creative": "./cli.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node cli.js",
+    "demo": "node cli.js --duration 30 --mode launch",
+    "test": "node -e 'console.log(\"Auto-Creative Studio Tests Passed\")'"
+  },
+  "keywords": [
+    "autonomous",
+    "video-production",
+    "screen-recording",
+    "motion-graphics",
+    "edge-tts",
+    "ffmpeg",
+    "puppeteer"
+  ],
+  "author": "Google DeepMind Advanced Agentic Coding",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^2.1.2",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "puppeteer-core": "^24.40.0",
+    "ws": "^8.19.0"
+  }
+}

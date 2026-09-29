@@ -1,0 +1,83 @@
+{
+  "totalClaims": 8,
+  "verifiedCount": 8,
+  "partialCount": 0,
+  "unverifiedCount": 0,
+  "futureCount": 0,
+  "evidenceRatio": 100,
+  "claims": [
+    {
+      "claim": "Autonomous Intelligence Hub",
+      "source": "Features",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Found active heading in live application DOM.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Live Stream Throughput (Thousands Events / Sec)",
+      "source": "Features",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Found active heading in live application DOM.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Active Data Streams",
+      "source": "Features",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Found active heading in live application DOM.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Actionable: Export Metrics",
+      "source": "Live UI Action",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Action button found in live application interface.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Actionable: Deploy Stream",
+      "source": "Live UI Action",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Action button found in live application interface.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Actionable: 1 Hour",
+      "source": "Live UI Action",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Action button found in live application interface.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Actionable: 24 Hours",
+      "source": "Live UI Action",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Action button found in live application interface.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    },
+    {
+      "claim": "Actionable: 7 Days",
+      "source": "Live UI Action",
+      "state": "VERIFIED",
+      "confidence": 0.92,
+      "rationale": "Action button found in live application interface.",
+      "demonstrable": true,
+      "suggestedVisual": "Real screen recording of UI element"
+    }
+  ],
+  "verifiedAt": "2026-09-29T00:05:43.029Z"
+}

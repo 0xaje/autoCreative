@@ -1,0 +1,116 @@
+{
+  "projectTitle": "Saas Analytics - Launch Video",
+  "productName": "Saas Analytics",
+  "tagline": "Autonomous Creative Solution",
+  "creativeMode": "launch",
+  "modeDescription": "Cinematic introduction with real product footage",
+  "aspectRatio": "16:9",
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "targetTotalDuration": 20,
+  "scenesCount": 5,
+  "scenes": [
+    {
+      "id": "scene-01-hero-intro",
+      "index": 0,
+      "title": "Cinematic Hook & Title",
+      "type": "motion_graphic",
+      "targetDuration": 7,
+      "evidenceState": "VERIFIED",
+      "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing Saas Analytics, Autonomous Creative Solution.",
+      "visualPlan": {
+        "motionType": "intro_cinematic",
+        "headline": "Saas Analytics",
+        "subline": "Autonomous Creative Solution",
+        "colorAccent": "#6366f1"
+      },
+      "overlay": {
+        "badge": "PRODUCT LAUNCH"
+      }
+    },
+    {
+      "id": "scene-02-the-problem",
+      "index": 1,
+      "title": "The Challenge & Architecture",
+      "type": "hybrid_callout",
+      "targetDuration": 4,
+      "evidenceState": "VERIFIED",
+      "narrationText": "Traditional workflows are fragmented and manual. Saas Analytics reimagines the entire process with an intuitive, unified platform.",
+      "visualPlan": {
+        "motionType": "problem_solution_split",
+        "headline": "The Problem: Fragmented Tools",
+        "subline": "The Solution: Autonomous Unified Experience"
+      },
+      "overlay": {
+        "lowerThird": {
+          "title": "Architecture",
+          "subtitle": "Automated & Cohesive"
+        },
+        "badge": "ARCHITECTURE"
+      }
+    },
+    {
+      "id": "scene-03-live-feature-1",
+      "index": 2,
+      "title": "Core Product in Action",
+      "type": "screen_recording",
+      "targetDuration": 7,
+      "evidenceState": "VERIFIED",
+      "narrationText": "Here is the actual application at work. Notice how effortlessly you can navigate and leverage Real-time automated workflow.",
+      "visualPlan": {
+        "interaction": "explore_primary_feature",
+        "targetSelector": "nav a, button.btn-primary",
+        "scrollBehavior": "smooth"
+      },
+      "overlay": {
+        "lowerThird": {
+          "title": "Live Capability",
+          "subtitle": "Real-time automated workflow"
+        },
+        "badge": "VERIFIED EVIDENCE"
+      }
+    },
+    {
+      "id": "scene-04-live-feature-2",
+      "index": 3,
+      "title": "Deep Dive & Real Results",
+      "type": "screen_recording",
+      "targetDuration": 6,
+      "evidenceState": "VERIFIED",
+      "narrationText": "Behind the scenes, Intuitive modern interface delivers dependable performance, validated against real-world production metrics.",
+      "visualPlan": {
+        "interaction": "deep_dive_feature",
+        "targetSelector": "input, select, .metric-card",
+        "scrollBehavior": "smooth"
+      },
+      "overlay": {
+        "lowerThird": {
+          "title": "Performance Engine",
+          "subtitle": "Intuitive modern interface"
+        },
+        "badge": "VERIFIED EVIDENCE"
+      }
+    },
+    {
+      "id": "scene-05-outro-cta",
+      "index": 4,
+      "title": "Momentum & Call to Action",
+      "type": "motion_graphic",
+      "targetDuration": 7,
+      "evidenceState": "VERIFIED",
+      "narrationText": "Whether you are shipping for clients or building your own vision, Saas Analytics is ready to elevate your creative output.",
+      "visualPlan": {
+        "motionType": "outro_cta",
+        "headline": "Start Creating Today",
+        "ctaText": "Visit Live Application",
+        "url": "Repository & Live Deployment Available"
+      },
+      "overlay": {
+        "badge": "GET STARTED"
+      }
+    }
+  ],
+  "plannedAt": "2026-09-28T23:55:02.539Z"
+}

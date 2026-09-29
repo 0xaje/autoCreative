@@ -1,0 +1,42 @@
+{
+  "productName": "PulseFlow Analytics",
+  "totalScenes": 5,
+  "fullText": "Every great breakthrough begins with a simpler way to build. Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.. Traditional workflows are fragmented and manual. PulseFlow Analytics reimagines the entire process with an intuitive, unified platform. Here is the actual application at work. Notice how effortlessly you can navigate and leverage Autonomous Intelligence Hub. Behind the scenes, Live Stream Throughput (Thousands Events / Sec) delivers dependable performance, validated against real-world production metrics. Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output.",
+  "scenes": [
+    {
+      "id": "scene-01-hero-intro",
+      "title": "Cinematic Hook & Title",
+      "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams..",
+      "estimatedDuration": 7,
+      "evidenceTag": "VERIFIED"
+    },
+    {
+      "id": "scene-02-the-problem",
+      "title": "The Challenge & Architecture",
+      "narrationText": "Traditional workflows are fragmented and manual. PulseFlow Analytics reimagines the entire process with an intuitive, unified platform.",
+      "estimatedDuration": 5,
+      "evidenceTag": "VERIFIED"
+    },
+    {
+      "id": "scene-03-live-feature-1",
+      "title": "Core Product in Action",
+      "narrationText": "Here is the actual application at work. Notice how effortlessly you can navigate and leverage Autonomous Intelligence Hub.",
+      "estimatedDuration": 8,
+      "evidenceTag": "VERIFIED"
+    },
+    {
+      "id": "scene-04-live-feature-2",
+      "title": "Deep Dive & Real Results",
+      "narrationText": "Behind the scenes, Live Stream Throughput (Thousands Events / Sec) delivers dependable performance, validated against real-world production metrics.",
+      "estimatedDuration": 7,
+      "evidenceTag": "VERIFIED"
+    },
+    {
+      "id": "scene-05-outro-cta",
+      "title": "Momentum & Call to Action",
+      "narrationText": "Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output.",
+      "estimatedDuration": 7,
+      "evidenceTag": "VERIFIED"
+    }
+  ]
+}

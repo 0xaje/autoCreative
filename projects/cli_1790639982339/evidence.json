@@ -1,0 +1,47 @@
+{
+  "totalClaims": 4,
+  "verifiedCount": 0,
+  "partialCount": 4,
+  "unverifiedCount": 0,
+  "futureCount": 0,
+  "evidenceRatio": 0,
+  "claims": [
+    {
+      "claim": "Real-time automated workflow",
+      "source": "Features",
+      "state": "PARTIAL",
+      "confidence": 0.65,
+      "rationale": "Documented in product features, pending interactive verification.",
+      "demonstrable": false,
+      "suggestedVisual": "Feature highlight badge"
+    },
+    {
+      "claim": "Intuitive modern interface",
+      "source": "Features",
+      "state": "PARTIAL",
+      "confidence": 0.65,
+      "rationale": "Documented in product features, pending interactive verification.",
+      "demonstrable": false,
+      "suggestedVisual": "Feature highlight badge"
+    },
+    {
+      "claim": "Intelligent data synchronization",
+      "source": "Features",
+      "state": "PARTIAL",
+      "confidence": 0.65,
+      "rationale": "Documented in product features, pending interactive verification.",
+      "demonstrable": false,
+      "suggestedVisual": "Feature highlight badge"
+    },
+    {
+      "claim": "Production-grade reliability",
+      "source": "Features",
+      "state": "PARTIAL",
+      "confidence": 0.65,
+      "rationale": "Documented in product features, pending interactive verification.",
+      "demonstrable": false,
+      "suggestedVisual": "Feature highlight badge"
+    }
+  ],
+  "verifiedAt": "2026-09-28T23:59:42.350Z"
+}

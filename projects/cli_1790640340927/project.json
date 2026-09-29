@@ -1,0 +1,535 @@
+{
+  "id": "cli_1790640340927",
+  "createdAt": "2026-09-29T00:05:40.929Z",
+  "status": "COMPLETED",
+  "inputs": {
+    "githubUrl": null,
+    "liveUrl": "http://localhost:4500/demo-apps/saas-analytics/index.html",
+    "localPath": null,
+    "prompt": "Create a 25-second cinematic product launch video showing real telemetry features, live data streams, and autonomous performance.",
+    "mode": "launch",
+    "duration": 25,
+    "aspectRatio": "16:9",
+    "voiceId": "en-US-ChristopherNeural",
+    "musicStyle": "cinematic"
+  },
+  "currentStage": "CREATIVE DIRECTOR",
+  "progressPercent": 100,
+  "artifacts": {
+    "projectJson": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/project.json",
+    "sourceAnalysis": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/source-analysis.json",
+    "evidence": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/evidence.json",
+    "sceneManifest": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/scene-manifest.json",
+    "script": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/script.json",
+    "outputMp4": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/output.mp4",
+    "qcReport": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/qc-report.json"
+  },
+  "logs": [
+    {
+      "timestamp": "2026-09-29T00:05:40.929Z",
+      "agent": "Creative Director",
+      "message": "Initiating Autonomous Studio Pipeline for Project [cli_1790640340927]..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:40.930Z",
+      "agent": "Researcher",
+      "message": "Scanning repository code, documentation, and live interface..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:40.931Z",
+      "agent": "Researcher",
+      "message": "Starting comprehensive source intelligence scan..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:40.932Z",
+      "agent": "Researcher",
+      "message": "Crawling live application at http://localhost:4500/demo-apps/saas-analytics/index.html..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.024Z",
+      "agent": "Researcher",
+      "message": "Synthesizing product capabilities and feature matrix..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.026Z",
+      "agent": "Researcher",
+      "message": "Source analysis completed and saved to source-analysis.json."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.026Z",
+      "agent": "Evidence Engine",
+      "message": "Cross-referencing claims against live DOM elements and codebase..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.029Z",
+      "agent": "Evidence Engine",
+      "message": "Identified 8 verified features. Unverified claims excluded."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.029Z",
+      "agent": "Creative Director",
+      "message": "Drafting story arc, scenes, and narration script for [LAUNCH] mode..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.032Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 1/5: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:43.032Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Cinematic Hook & Title\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:47.059Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 1: \"Cinematic Hook & Title\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:05:47.061Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (intro_cinematic) for \"Cinematic Hook & Title\" (16.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:03.354Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 2/5: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:03.354Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"The Challenge & Architecture\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:06.862Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 2: \"The Challenge & Architecture\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:06.863Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (problem_solution_split) for \"The Challenge & Architecture\" (11.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:16.457Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 3/5: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:16.457Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Core Product in Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:19.347Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 3: \"Core Product in Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:19.350Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Core Product in Action\" (9.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:32.188Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.4s real footage: scene-03-live-feature-1.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:06:32.189Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 4/5: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:32.195Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Deep Dive & Real Results\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:36.124Z",
+      "agent": "Screen Recorder",
+      "message": "Launching Chrome & capturing live footage for Scene 4: \"Deep Dive & Real Results\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:36.125Z",
+      "agent": "Screen Recorder",
+      "message": "Recording real application footage for \"Deep Dive & Real Results\" (10.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:48.621Z",
+      "agent": "Screen Recorder",
+      "message": "Captured 1.5s real footage: scene-04-live-feature-2.mp4"
+    },
+    {
+      "timestamp": "2026-09-29T00:06:48.623Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural speech for Scene 5/5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:48.629Z",
+      "agent": "Voice Producer",
+      "message": "Synthesizing neural voice for \"Momentum & Call to Action\" with voice en-US-ChristopherNeural..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:51.321Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics for Scene 5: \"Momentum & Call to Action\"..."
+    },
+    {
+      "timestamp": "2026-09-29T00:06:51.321Z",
+      "agent": "Motion Designer",
+      "message": "Rendering motion graphics (outro_cta) for \"Momentum & Call to Action\" (8.0s at 1920x1080)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:01.741Z",
+      "agent": "Audio Engineer",
+      "message": "Composing soundtrack and applying smart sidechain ducking (50.9s)..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:01.743Z",
+      "agent": "Audio Engineer",
+      "message": "Composing background soundtrack (cinematic) for 50.9s timeline..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:04.473Z",
+      "agent": "Audio Engineer",
+      "message": "Applying smart audio ducking (sidechain compression) and mixing master track..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:07.057Z",
+      "agent": "Video Editor",
+      "message": "Composing multi-track video timeline and rendering master broadcast MP4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:07.059Z",
+      "agent": "Video Editor",
+      "message": "Assembling multi-scene timeline (5 scenes) at 1920x1080..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:07.063Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 1/5 (\"Cinematic Hook & Title\") to 15.4s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:13.633Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 2/5 (\"The Challenge & Architecture\") to 10.0s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:17.649Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 3/5 (\"Core Product in Action\") to 8.3s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:21.267Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 4/5 (\"Deep Dive & Real Results\") to 9.8s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:25.056Z",
+      "agent": "Video Editor",
+      "message": "Synchronizing Scene 5/5 (\"Momentum & Call to Action\") to 7.3s..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:27.753Z",
+      "agent": "Video Editor",
+      "message": "Stitching synchronized scene tracks and applying color grading..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:50.864Z",
+      "agent": "Video Editor",
+      "message": "Muxing master ducked audio track with 1080p H.264 stream..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:52.581Z",
+      "agent": "Video Editor",
+      "message": "Successfully rendered final broadcast MP4 (51.0s, 1.57 MB)"
+    },
+    {
+      "timestamp": "2026-09-29T00:07:52.582Z",
+      "agent": "Quality Controller",
+      "message": "Inspecting video codecs, stream sync, bitrate, and playback health..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:52.584Z",
+      "agent": "Quality Controller",
+      "message": "Inspecting master video stream integrity for output.mp4..."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:52.634Z",
+      "agent": "Quality Controller",
+      "message": "Quality Control Verdict: PASS (100/100 score). Video is verified playable."
+    },
+    {
+      "timestamp": "2026-09-29T00:07:52.635Z",
+      "agent": "Creative Director",
+      "message": "Production complete! Broadcast MP4 delivered: output.mp4"
+    }
+  ],
+  "evidenceSummary": {
+    "total": 8,
+    "verified": 8,
+    "partial": 0,
+    "unverified": 0,
+    "future": 0
+  },
+  "manifest": {
+    "projectTitle": "PulseFlow Analytics - Launch Video",
+    "productName": "PulseFlow Analytics",
+    "tagline": "PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.",
+    "creativeMode": "launch",
+    "modeDescription": "Cinematic introduction with real product footage",
+    "aspectRatio": "16:9",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "targetTotalDuration": 25,
+    "scenesCount": 5,
+    "scenes": [
+      {
+        "id": "scene-01-hero-intro",
+        "index": 0,
+        "title": "Cinematic Hook & Title",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Every great breakthrough begins with a simpler way to build. Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams..",
+        "visualPlan": {
+          "motionType": "intro_cinematic",
+          "headline": "PulseFlow Analytics",
+          "subline": "PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.",
+          "colorAccent": "#6366f1"
+        },
+        "overlay": {
+          "badge": "PRODUCT LAUNCH"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-01-hero-intro-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-01-hero-intro-sub.vtt",
+        "audioDuration": 15.408,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,975",
+            "startMs": 100,
+            "endMs": 3975,
+            "text": "Every great breakthrough begins with a simpler way to build."
+          },
+          {
+            "startTimeStr": "00:00:03,925",
+            "endTimeStr": "00:00:15,350",
+            "startMs": 3925,
+            "endMs": 15350,
+            "text": "Introducing PulseFlow Analytics, PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-01-hero-intro-motion.mp4"
+      },
+      {
+        "id": "scene-02-the-problem",
+        "index": 1,
+        "title": "The Challenge & Architecture",
+        "type": "hybrid_callout",
+        "targetDuration": 5,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Traditional workflows are fragmented and manual. PulseFlow Analytics reimagines the entire process with an intuitive, unified platform.",
+        "visualPlan": {
+          "motionType": "problem_solution_split",
+          "headline": "The Problem: Fragmented Tools",
+          "subline": "The Solution: Autonomous Unified Experience"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Architecture",
+            "subtitle": "Automated & Cohesive"
+          },
+          "badge": "ARCHITECTURE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-02-the-problem-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-02-the-problem-sub.vtt",
+        "audioDuration": 10.008,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,725",
+            "startMs": 100,
+            "endMs": 3725,
+            "text": "Traditional workflows are fragmented and manual."
+          },
+          {
+            "startTimeStr": "00:00:03,675",
+            "endTimeStr": "00:00:09,950",
+            "startMs": 3675,
+            "endMs": 9950,
+            "text": "PulseFlow Analytics reimagines the entire process with an intuitive, unified platform."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-02-the-problem-motion.mp4"
+      },
+      {
+        "id": "scene-03-live-feature-1",
+        "index": 2,
+        "title": "Core Product in Action",
+        "type": "screen_recording",
+        "targetDuration": 8,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Here is the actual application at work. Notice how effortlessly you can navigate and leverage Autonomous Intelligence Hub.",
+        "visualPlan": {
+          "interaction": "explore_primary_feature",
+          "targetSelector": "nav a, button.btn-primary",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Live Capability",
+            "subtitle": "Autonomous Intelligence Hub"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-03-live-feature-1-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-03-live-feature-1-sub.vtt",
+        "audioDuration": 8.328,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:03,087",
+            "startMs": 100,
+            "endMs": 3087,
+            "text": "Here is the actual application at work."
+          },
+          {
+            "startTimeStr": "00:00:03,037",
+            "endTimeStr": "00:00:08,275",
+            "startMs": 3037,
+            "endMs": 8275,
+            "text": "Notice how effortlessly you can navigate and leverage Autonomous Intelligence Hub."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/recordings/scene-03-live-feature-1.mp4"
+      },
+      {
+        "id": "scene-04-live-feature-2",
+        "index": 3,
+        "title": "Deep Dive & Real Results",
+        "type": "screen_recording",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Behind the scenes, Live Stream Throughput (Thousands Events / Sec) delivers dependable performance, validated against real-world production metrics.",
+        "visualPlan": {
+          "interaction": "deep_dive_feature",
+          "targetSelector": "input, select, .metric-card",
+          "scrollBehavior": "smooth"
+        },
+        "overlay": {
+          "lowerThird": {
+            "title": "Performance Engine",
+            "subtitle": "Live Stream Throughput (Thousands Events / Sec)"
+          },
+          "badge": "VERIFIED EVIDENCE"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-04-live-feature-2-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-04-live-feature-2-sub.vtt",
+        "audioDuration": 9.84,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:09,837",
+            "startMs": 100,
+            "endMs": 9837,
+            "text": "Behind the scenes, Live Stream Throughput (Thousands Events / Sec) delivers dependable performance, validated against real-world production metrics."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/recordings/scene-04-live-feature-2.mp4"
+      },
+      {
+        "id": "scene-05-outro-cta",
+        "index": 4,
+        "title": "Momentum & Call to Action",
+        "type": "motion_graphic",
+        "targetDuration": 7,
+        "evidenceState": "VERIFIED",
+        "narrationText": "Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output.",
+        "visualPlan": {
+          "motionType": "outro_cta",
+          "headline": "Start Creating Today",
+          "ctaText": "Visit Live Application",
+          "url": "Repository & Live Deployment Available"
+        },
+        "overlay": {
+          "badge": "GET STARTED"
+        },
+        "audioPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-05-outro-cta-voice.mp3",
+        "subtitlesPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/audio/scene-05-outro-cta-sub.vtt",
+        "audioDuration": 7.344,
+        "subtitles": [
+          {
+            "startTimeStr": "00:00:00,100",
+            "endTimeStr": "00:00:07,337",
+            "startMs": 100,
+            "endMs": 7337,
+            "text": "Whether you are shipping for clients or building your own vision, PulseFlow Analytics is ready to elevate your creative output."
+          }
+        ],
+        "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/scene-05-outro-cta-motion.mp4"
+      }
+    ],
+    "plannedAt": "2026-09-29T00:05:43.031Z"
+  },
+  "qc": {
+    "verdict": "PASS",
+    "qualityScore": 100,
+    "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/output.mp4",
+    "inspectedAt": "2026-09-29T00:07:52.634Z",
+    "metadata": {
+      "durationSeconds": 51.033333,
+      "width": 1920,
+      "height": 1080,
+      "fps": 30,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioChannels": 1,
+      "sizeBytes": 1648469,
+      "bitrate": 258414
+    },
+    "checks": [
+      {
+        "name": "File Size Integrity",
+        "pass": true,
+        "actual": "1.57 MB",
+        "expected": "> 0.1 MB"
+      },
+      {
+        "name": "Video Stream Present",
+        "pass": true,
+        "actual": "h264",
+        "expected": "h264"
+      },
+      {
+        "name": "Audio Stream Present",
+        "pass": true,
+        "actual": "aac",
+        "expected": "aac"
+      },
+      {
+        "name": "Resolution Match",
+        "pass": true,
+        "actual": "1920x1080",
+        "expected": "1920x1080"
+      },
+      {
+        "name": "Duration Calibration",
+        "pass": true,
+        "actual": "51.0s",
+        "expected": "~50.9s (± 35%)"
+      }
+    ]
+  },
+  "completedAt": "2026-09-29T00:07:52.635Z",
+  "finalVideo": {
+    "path": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/output.mp4",
+    "duration": 51.033333,
+    "width": 1920,
+    "height": 1080,
+    "sizeBytes": 1648469
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "name": "PulseFlow Analytics",
+  "tagline": "PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.",
+  "description": "PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.",
+  "inputs": {
+    "githubUrl": null,
+    "liveUrl": "http://localhost:4500/demo-apps/saas-analytics/index.html",
+    "localPath": null
+  },
+  "features": [
+    "Autonomous Intelligence Hub",
+    "Live Stream Throughput (Thousands Events / Sec)",
+    "Active Data Streams"
+  ],
+  "techStack": [
+    "JavaScript",
+    "Node.js",
+    "Modern Web"
+  ],
+  "liveData": {
+    "url": "http://localhost:4500/demo-apps/saas-analytics/index.html",
+    "title": "PulseFlow Analytics - Autonomous Intelligence Platform",
+    "metaDescription": "PulseFlow delivers real-time automated telemetry, high-throughput event processing, and autonomous operational insights for modern engineering teams.",
+    "headings": [
+      "Autonomous Intelligence Hub",
+      "Live Stream Throughput (Thousands Events / Sec)",
+      "Active Data Streams"
+    ],
+    "navLinks": [
+      {
+        "text": "Overview",
+        "href": "#overview"
+      },
+      {
+        "text": "Live Telemetry",
+        "href": "#analytics"
+      },
+      {
+        "text": "Pipelines",
+        "href": "#pipelines"
+      },
+      {
+        "text": "Team Access",
+        "href": "#settings"
+      }
+    ],
+    "buttons": [
+      "Export Metrics",
+      "Deploy Stream",
+      "1 Hour",
+      "24 Hours",
+      "7 Days"
+    ],
+    "interactiveElements": [
+      {
+        "tag": "table",
+        "className": "",
+        "id": "",
+        "rect": {}
+      }
+    ],
+    "heroScreenshot": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/hero-landing.png",
+    "themeColors": []
+  },
+  "githubData": null,
+  "heroScreenshot": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/assets/hero-landing.png",
+  "analyzedAt": "2026-09-29T00:05:43.025Z"
+}

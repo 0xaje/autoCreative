@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "qualityScore": 100,
+  "videoPath": "/home/oyeolorun/auto-creative/projects/cli_1790640340927/output.mp4",
+  "inspectedAt": "2026-09-29T00:07:52.634Z",
+  "metadata": {
+    "durationSeconds": 51.033333,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioChannels": 1,
+    "sizeBytes": 1648469,
+    "bitrate": 258414
+  },
+  "checks": [
+    {
+      "name": "File Size Integrity",
+      "pass": true,
+      "actual": "1.57 MB",
+      "expected": "> 0.1 MB"
+    },
+    {
+      "name": "Video Stream Present",
+      "pass": true,
+      "actual": "h264",
+      "expected": "h264"
+    },
+    {
+      "name": "Audio Stream Present",
+      "pass": true,
+      "actual": "aac",
+      "expected": "aac"
+    },
+    {
+      "name": "Resolution Match",
+      "pass": true,
+      "actual": "1920x1080",
+      "expected": "1920x1080"
+    },
+    {
+      "name": "Duration Calibration",
+      "pass": true,
+      "actual": "51.0s",
+      "expected": "~50.9s (± 35%)"
+    }
+  ]
+}
