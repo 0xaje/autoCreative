@@ -8,6 +8,8 @@
   },
   "scripts": {
     "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Static studio assets ready' && npm run typecheck",
     "cli": "node cli.js",
     "demo": "node cli.js --duration 30 --mode launch",
     "test": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/integration/pipeline.test.js && node tests/e2e/production.test.js",

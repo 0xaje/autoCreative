@@ -1,4 +1,4 @@
-// Autonomous Creative Production Studio Client
+// Autonomous Creative Production Studio — Client Console
 document.addEventListener('DOMContentLoaded', () => {
   let currentProjectId = null;
   let currentProjectData = null;
@@ -10,39 +10,44 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('production-form');
   const btnSubmit = document.getElementById('btn-submit');
   const btnQuickDemo = document.getElementById('btn-quick-demo');
+  const btnOpenArchive = document.getElementById('btn-open-archive');
   const durationSlider = document.getElementById('input-duration');
   const durationVal = document.getElementById('duration-val');
-  const ratioButtons = document.querySelectorAll('.btn-ratio');
-  const modeCards = document.querySelectorAll('.mode-card');
+  const ratioButtons = document.querySelectorAll('.ratio-btn');
+  const modeCards = document.querySelectorAll('.mode-option');
+  const sourceTabs = document.querySelectorAll('.source-tab');
   const wsStatus = document.getElementById('ws-status');
-  const progressBar = document.getElementById('pipeline-progress-bar');
+  const wsStatusText = document.getElementById('ws-status-text');
   const progressText = document.getElementById('pipeline-progress-text');
   const liveTicker = document.getElementById('live-feed-ticker');
+  const tickerAgent = document.getElementById('ticker-agent');
 
-  // Video & Player Elements
+  // Video & Monitor Elements
+  const monitorFrame = document.getElementById('monitor-frame');
   const studioVideo = document.getElementById('studio-video');
   const videoPlaceholder = document.getElementById('video-placeholder');
   const captionOverlay = document.getElementById('caption-overlay');
+  const captionText = document.getElementById('caption-text');
   const toggleCaptions = document.getElementById('toggle-captions');
   const btnDownloadMp4 = document.getElementById('btn-download-mp4');
   const currentProjectTitle = document.getElementById('current-project-title');
   const qcScoreBadge = document.getElementById('qc-score-badge');
 
   // Tabs & Views
-  const tabButtons = document.querySelectorAll('.tab-item');
-  const tabContents = document.querySelectorAll('.tab-content');
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanes = document.querySelectorAll('.tab-pane');
   const timelineScenesList = document.getElementById('timeline-scenes-list');
   const evidenceTableBody = document.getElementById('evidence-table-body');
-  const scriptContainer = document.getElementById('script-container');
   const evidenceStatsPills = document.getElementById('evidence-stats-pills');
+  const scriptContainer = document.getElementById('script-container');
 
   // Natural Language Regeneration Elements (PRD Section 16)
   const regenIntentForm = document.getElementById('regen-intent-form');
   const inputRegenPrompt = document.getElementById('input-regen-prompt');
   const btnRegenSubmit = document.getElementById('btn-regen-submit');
-  const regenChips = document.querySelectorAll('.regen-chip');
+  const regenChips = document.querySelectorAll('.regen-chip-btn');
 
-  // Project Model Elements (PRD Section 3)
+  // Project Truth Model Elements (PRD Section 3)
   const modelProjectName = document.getElementById('model-project-name');
   const modelPurpose = document.getElementById('model-purpose');
   const modelTargetUser = document.getElementById('model-target-user');
@@ -50,14 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const modelFeaturesList = document.getElementById('model-features-list');
   const modelWorkflowsList = document.getElementById('model-workflows-list');
 
-  // Artifact Modal Elements
+  // Modals
   const artifactModal = document.getElementById('artifact-modal');
   const btnCloseArtModal = document.getElementById('btn-close-art-modal');
   const btnCloseArtFooter = document.getElementById('btn-close-art-footer');
   const artifactModalTitle = document.getElementById('artifact-modal-title');
   const artifactCodeContent = document.getElementById('artifact-code-content');
 
-  // Modal Elements (Selective Scene Regeneration)
   const regenModal = document.getElementById('regen-modal');
   const btnCloseModal = document.getElementById('btn-close-modal');
   const btnCancelModal = document.getElementById('btn-cancel-modal');
@@ -67,18 +71,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const regenRerecordFootage = document.getElementById('regen-rerecord-footage');
   const regenModalTitle = document.getElementById('regen-modal-title');
 
-  // Pipeline Flow Nodes
-  const nodeMap = {
-    'CREATIVE DIRECTOR': document.getElementById('node-director'),
-    'RESEARCHER': document.getElementById('node-researcher'),
-    'EVIDENCE ENGINE': document.getElementById('node-evidence'),
-    'SCREEN RECORDER': document.getElementById('node-recorder'),
-    'VOICE PRODUCER': document.getElementById('node-voice'),
-    'MOTION DESIGNER': document.getElementById('node-motion'),
-    'AUDIO ENGINEER': document.getElementById('node-audio'),
-    'VIDEO EDITOR': document.getElementById('node-editor'),
-    'QUALITY CONTROLLER': document.getElementById('node-qc')
-  };
+  const archiveModal = document.getElementById('archive-modal');
+  const btnCloseArchive = document.getElementById('btn-close-archive');
+  const btnCloseArchiveFooter = document.getElementById('btn-close-archive-footer');
+  const archiveProjectsList = document.getElementById('archive-projects-list');
+
+  // 9 Canonical Production Rail Steps
+  const railSteps = [
+    { id: 'rail-understand', name: 'UNDERSTAND', stages: ['ANALYZING', 'RESEARCHER'] },
+    { id: 'rail-verify', name: 'VERIFY', stages: ['CLASSIFYING', 'EVIDENCE ENGINE'] },
+    { id: 'rail-direct', name: 'DIRECT', stages: ['PLANNING', 'CREATIVE DIRECTOR'] },
+    { id: 'rail-capture', name: 'CAPTURE', stages: ['RECORDING', 'EXPLORING', 'SCREEN RECORDER', 'BROWSER AGENT'] },
+    { id: 'rail-create', name: 'CREATE', stages: ['GENERATING_AUDIO', 'GENERATING_MOTION', 'VOICE PRODUCER', 'MOTION DESIGNER'] },
+    { id: 'rail-compose', name: 'COMPOSE', stages: ['COMPOSING', 'AUDIO ENGINEER'] },
+    { id: 'rail-render', name: 'RENDER', stages: ['RENDERING', 'VIDEO EDITOR'] },
+    { id: 'rail-review', name: 'REVIEW', stages: ['QUALITY_CHECK', 'QUALITY CONTROLLER'] },
+    { id: 'rail-deliver', name: 'DELIVER', stages: ['COMPLETED'] }
+  ];
 
   // Initialize WebSocket connection
   function connectWebSocket() {
@@ -88,20 +97,28 @@ document.addEventListener('DOMContentLoaded', () => {
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
-      wsStatus.querySelector('.status-text').textContent = 'Studio Connected';
-      wsStatus.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+      if (wsStatusText) wsStatusText.textContent = 'Studio Online';
+      if (wsStatus) {
+        const dot = wsStatus.querySelector('.status-dot');
+        if (dot) dot.className = 'status-dot live';
+      }
     };
 
     socket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         handleSocketMessage(msg);
-      } catch (e) {}
+      } catch (e) {
+        console.error('Socket message parse error:', e);
+      }
     };
 
     socket.onclose = () => {
-      wsStatus.querySelector('.status-text').textContent = 'Reconnecting...';
-      wsStatus.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+      if (wsStatusText) wsStatusText.textContent = 'Reconnecting...';
+      if (wsStatus) {
+        const dot = wsStatus.querySelector('.status-dot');
+        if (dot) dot.className = 'status-dot';
+      }
       setTimeout(connectWebSocket, 3000);
     };
   }
@@ -111,32 +128,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (msg.event === 'progress') {
       const { projectId, agent, message, percent } = msg.data;
       if (currentProjectId && projectId !== currentProjectId) return;
-
-      updateProgress(percent, agent, message);
+      updateRailProgress(percent, agent, message);
     } else if (msg.event === 'complete') {
       const { projectId, projectData } = msg.data;
       if (currentProjectId && projectId !== currentProjectId) return;
-
       onProductionCompleted(projectData);
     } else if (msg.event === 'scene_regenerated') {
       const { projectId, sceneIndex, result } = msg.data;
       if (currentProjectId && projectId !== currentProjectId) return;
-
       onSceneRegenerated(sceneIndex, result);
     } else if (msg.event === 'intent_regenerated') {
       const { projectId, userRequest, result } = msg.data;
       if (currentProjectId && projectId !== currentProjectId) return;
-
       if (btnRegenSubmit) {
         btnRegenSubmit.disabled = false;
         btnRegenSubmit.textContent = 'Regenerate Video';
       }
-
       currentProjectData = result.projectData;
       onProductionCompleted(currentProjectData);
-      alert(`🎬 Studio Natural Language Regeneration Complete!\n\nApplied request: "${userRequest}"\nAll scenes, voice, audio ducking, and visual assets updated without re-analyzing repository.`);
+      showNotification(`Regeneration complete: "${userRequest}"`);
     } else if (msg.event === 'error') {
-      alert(`Pipeline Notification: ${msg.data.error || 'Operation failed'}`);
+      showNotification(`Pipeline Alert: ${msg.data.error || 'Operation failed'}`, true);
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
       if (btnRegenSubmit) {
@@ -146,26 +158,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Update pipeline visual nodes & progress
-  function updateProgress(percent, agent, message) {
-    progressBar.style.width = `${percent}%`;
-    progressText.textContent = `${agent.toUpperCase()} (${percent}%)`;
-    liveTicker.textContent = `[${agent}] ${message}`;
+  // Update Production Rail Steps & Ticker
+  function updateRailProgress(percent, agent, message) {
+    if (progressText) progressText.textContent = `${agent.toUpperCase()} (${percent}%)`;
+    if (tickerAgent) tickerAgent.textContent = `${agent.toUpperCase()}:`;
+    if (liveTicker) liveTicker.textContent = message;
 
-    const agentKey = agent.toUpperCase().replace(/^\[REGEN\]\s*/, '');
-    Object.keys(nodeMap).forEach(key => {
-      const el = nodeMap[key];
+    const normalizedAgent = (agent || '').toUpperCase();
+    let matchedStepIndex = -1;
+
+    for (let i = 0; i < railSteps.length; i++) {
+      const step = railSteps[i];
+      if (step.stages.some(s => normalizedAgent.includes(s))) {
+        matchedStepIndex = i;
+        break;
+      }
+    }
+
+    if (matchedStepIndex === -1) {
+      if (percent < 20) matchedStepIndex = 0;
+      else if (percent < 35) matchedStepIndex = 1;
+      else if (percent < 50) matchedStepIndex = 2;
+      else if (percent < 65) matchedStepIndex = 3;
+      else if (percent < 75) matchedStepIndex = 4;
+      else if (percent < 85) matchedStepIndex = 5;
+      else if (percent < 92) matchedStepIndex = 6;
+      else if (percent < 98) matchedStepIndex = 7;
+      else matchedStepIndex = 8;
+    }
+
+    railSteps.forEach((step, idx) => {
+      const el = document.getElementById(step.id);
       if (!el) return;
-      if (key === agentKey) {
-        el.classList.add('active');
-        el.querySelector('.node-status').textContent = 'Active';
-      } else if (el.classList.contains('active')) {
-        el.classList.remove('active');
+      el.classList.remove('active', 'completed');
+      if (idx < matchedStepIndex) {
         el.classList.add('completed');
-        el.querySelector('.node-status').textContent = 'Done';
+      } else if (idx === matchedStepIndex) {
+        el.classList.add('active');
       }
     });
   }
+
+  // Source Switcher
+  sourceTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      sourceTabs.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      const type = tab.dataset.source;
+      const gh = document.getElementById('input-github');
+      const live = document.getElementById('input-live');
+
+      if (type === 'repo') {
+        gh.style.display = 'block';
+        live.style.display = 'block';
+        gh.focus();
+      } else if (type === 'live') {
+        gh.style.display = 'none';
+        live.style.display = 'block';
+        live.focus();
+      } else if (type === 'demo') {
+        gh.style.display = 'block';
+        live.style.display = 'block';
+        gh.value = 'https://github.com/example/pulseflow-analytics';
+        live.value = `${window.location.origin}/demo-apps/saas-analytics/index.html`;
+      }
+    });
+  });
 
   // Production Form Submit
   form.addEventListener('submit', async (e) => {
@@ -182,12 +245,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmit.disabled = true;
     btnSubmit.textContent = 'PRODUCING VIDEO (AUTONOMOUS)...';
 
-    // Reset nodes
-    Object.values(nodeMap).forEach(node => {
-      if (node) {
-        node.classList.remove('active', 'completed');
-        node.querySelector('.node-status').textContent = 'Standby';
-      }
+    // Reset rail steps
+    railSteps.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) el.classList.remove('active', 'completed');
     });
 
     try {
@@ -210,15 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.error || 'Failed to start production');
 
       currentProjectId = data.projectId;
-      updateProgress(5, 'Creative Director', 'Studio initialized project ' + currentProjectId);
+      updateRailProgress(5, 'RESEARCHER', `Studio initiated project ${currentProjectId}`);
     } catch (err) {
-      alert(err.message);
+      showNotification(err.message, true);
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
     }
   });
 
-  // 1-Click Instant Demo Button
+  // Quick Demo / Sample Button
   btnQuickDemo.addEventListener('click', () => {
     document.getElementById('input-github').value = 'https://github.com/example/pulseflow-analytics';
     document.getElementById('input-live').value = `${window.location.origin}/demo-apps/saas-analytics/index.html`;
@@ -232,17 +293,28 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSubmit.disabled = false;
     btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
 
-    // Mark all nodes completed
-    Object.values(nodeMap).forEach(n => {
-      if (n) {
-        n.classList.remove('active');
-        n.classList.add('completed');
-        n.querySelector('.node-status').textContent = 'Done';
+    // Mark all steps completed
+    railSteps.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) {
+        el.classList.remove('active');
+        el.classList.add('completed');
       }
     });
-    progressBar.style.width = '100%';
-    progressText.textContent = 'COMPLETED (100%)';
-    liveTicker.textContent = `Production ready: ${projectData.manifest?.projectTitle || 'Broadcast MP4'}`;
+
+    if (progressText) progressText.textContent = 'DELIVERED (100%)';
+    if (tickerAgent) tickerAgent.textContent = 'DELIVERED:';
+    if (liveTicker) liveTicker.textContent = `Broadcast MP4 ready: ${projectData.manifest?.projectTitle || 'Final Output'}`;
+
+    // Aspect Ratio container adjustment
+    const aspect = projectData.inputs?.aspectRatio || projectData.manifest?.aspectRatio || '16:9';
+    if (aspect === '9:16') {
+      monitorFrame.classList.remove('aspect-16-9');
+      monitorFrame.classList.add('aspect-9-16');
+    } else {
+      monitorFrame.classList.remove('aspect-9-16');
+      monitorFrame.classList.add('aspect-16-9');
+    }
 
     // Load Video
     const videoUrl = `/api/projects/${projectData.id}/video?t=${Date.now()}`;
@@ -256,23 +328,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Title & QC Badge
     currentProjectTitle.textContent = projectData.manifest?.projectTitle || 'Autonomous Video';
-    const score = projectData.qc?.qualityScore || 100;
-    qcScoreBadge.textContent = `${score}/100 ${projectData.qc?.verdict || 'PASS'}`;
-    qcScoreBadge.className = 'video-badge pass';
+    const score = projectData.qc?.qualityScore || projectData.qcReport?.qualityScore || 100;
+    const verdict = projectData.qc?.verdict || projectData.qcReport?.verdict || 'PASS';
+    qcScoreBadge.textContent = `${score}/100 ${verdict}`;
+    qcScoreBadge.className = 'qc-badge pass';
 
-    // Render Timeline & Scenes
-    renderTimelineScenes(projectData.manifest?.scenes || []);
+    // Render Editorial Timeline
+    renderEditorialTimeline(projectData.manifest?.scenes || []);
 
-    // Render Project Model (PRD Section 3)
+    // Render Project Truth Model
     renderProjectModel(projectData.id);
 
     // Render Evidence
-    renderEvidence(projectData.evidenceSummary, projectData.id);
+    renderEvidence(projectData.id);
 
     // Render Script
     renderScript(projectData.manifest?.scenes || []);
 
-    // Flatten subtitles for synchronized playback
+    // Synchronize subtitles
     activeSubtitles = [];
     let cumulativeTime = 0;
     (projectData.manifest?.scenes || []).forEach(scene => {
@@ -288,11 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
       cumulativeTime += (scene.audioDuration || scene.targetDuration || 5);
     });
 
-    // Auto-play preview
     studioVideo.play().catch(() => {});
   }
 
-  // Synchronized Caption Overlay during video playback
+  // Synchronized Subtitle Overlay during playback
   studioVideo.addEventListener('timeupdate', () => {
     if (!toggleCaptions.checked || activeSubtitles.length === 0) {
       captionOverlay.style.display = 'none';
@@ -303,42 +375,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentSub = activeSubtitles.find(s => t >= s.startSec && t <= s.endSec);
 
     if (currentSub && currentSub.text) {
-      captionOverlay.textContent = currentSub.text;
+      captionText.textContent = currentSub.text;
       captionOverlay.style.display = 'block';
     } else {
       captionOverlay.style.display = 'none';
     }
   });
 
-  // Render Multi-Track Scene Cards
-  function renderTimelineScenes(scenes) {
+  // Render Multi-Track Editorial Timeline
+  function renderEditorialTimeline(scenes) {
     if (!scenes || scenes.length === 0) {
-      timelineScenesList.innerHTML = '<div class="timeline-empty">No scenes planned.</div>';
+      timelineScenesList.innerHTML = '<div class="form-hint" style="padding: 16px;">No scenes planned.</div>';
       return;
     }
 
     timelineScenesList.innerHTML = scenes.map((scene, idx) => `
-      <div class="scene-timeline-card" data-index="${idx}">
-        <div class="scene-idx">SCENE ${idx + 1}</div>
-        <div class="scene-details">
-          <h4>${scene.title}</h4>
-          <p>${scene.narrationText}</p>
-          <div class="scene-tags">
-            <span class="tag-badge">${scene.type.replace('_', ' ')}</span>
-            <span class="tag-badge verified">${scene.evidenceState || 'VERIFIED'}</span>
-            <span class="tag-badge">${(scene.audioDuration || scene.targetDuration || 0).toFixed(1)}s</span>
-          </div>
+      <div class="timeline-scene-card" data-index="${idx}">
+        <span class="scene-num-badge">SCENE 0${idx + 1} &bull; ${(scene.audioDuration || scene.targetDuration || 0).toFixed(1)}s</span>
+        <h4 class="scene-title-text">${scene.title}</h4>
+        <p class="scene-narration-snippet">${scene.narrationText}</p>
+        <div class="scene-tags-group">
+          <span class="pill-tag">${scene.type.replace('_', ' ')}</span>
+          <span class="pill-tag verified">${scene.evidenceState || 'VERIFIED'}</span>
         </div>
-        <button class="btn-regen-scene" onclick="window.__openRegenModal(${idx})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Regenerate
+        <button type="button" class="btn-scene-regen" onclick="window.__openRegenModal(${idx})">
+          Regenerate Scene
         </button>
       </div>
     `).join('');
   }
 
-  // Render Evidence Table
-  async function renderEvidence(summary, projectId) {
+  // Render Evidence Inspector
+  async function renderEvidence(projectId) {
     if (!projectId) return;
 
     try {
@@ -347,25 +415,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       evidenceStatsPills.innerHTML = `
-        <span class="pill verified">${data.verifiedCount} Verified</span>
-        <span class="pill partial">${data.partialCount} Partial</span>
-        <span class="pill unverified">${data.unverifiedCount} Unverified (Excluded)</span>
-        <span class="pill future">${data.futureCount} Future Roadmap</span>
+        <span class="evidence-pill verified">${data.verifiedCount || 0} Verified</span>
+        <span class="evidence-pill partial">${data.partialCount || 0} Partial</span>
+        <span class="evidence-pill unverified">${data.unverifiedCount || 0} Unverified (Excluded)</span>
+        <span class="evidence-pill future">${data.futureCount || 0} Future Roadmap</span>
       `;
 
       evidenceTableBody.innerHTML = (data.claims || []).map(c => `
         <tr>
-          <td><strong>${c.claim}</strong></td>
-          <td><span class="pill ${c.state.toLowerCase()}">${c.state}</span></td>
-          <td>${Math.round(c.confidence * 100)}%</td>
-          <td style="color: var(--text-secondary);">${c.rationale}</td>
-          <td><code>${c.suggestedVisual}</code></td>
+          <td><strong style="color: var(--text-primary);">${c.claim}</strong></td>
+          <td><span class="evidence-pill ${(c.state || '').toLowerCase()}">${c.state}</span></td>
+          <td style="font-family: var(--font-mono);">${Math.round((c.confidence || 0) * 100)}%</td>
+          <td style="color: var(--text-secondary);">${c.rationale || '—'}</td>
+          <td><code style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-primary);">${c.suggestedVisual || '—'}</code></td>
         </tr>
       `).join('');
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error rendering evidence:', e);
+    }
   }
 
-  // Render Project Model (PRD Section 3)
+  // Render Project Truth Model (PRD Section 3)
   async function renderProjectModel(projectId) {
     if (!projectId) return;
 
@@ -382,23 +452,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modelFeaturesList) {
         if (data.features && data.features.length > 0) {
           modelFeaturesList.innerHTML = data.features.map(f =>
-            `<span class="feature-tag-badge">${f}</span>`
+            `<span class="pill-tag verified">${f}</span>`
           ).join('');
         } else {
-          modelFeaturesList.innerHTML = '<span class="empty-cell">No explicit features listed.</span>';
+          modelFeaturesList.innerHTML = '<span class="form-hint">No explicit features listed.</span>';
         }
       }
 
       if (modelWorkflowsList) {
         if (data.workflows && data.workflows.length > 0) {
           modelWorkflowsList.innerHTML = data.workflows.map(w => `
-            <div class="workflow-item-row">
-              <span class="workflow-item-name">${w.name || w.id || 'Interactive Workflow'}</span>
-              <span class="workflow-item-action">${w.action || w.target || 'CDP Browser Exploration'}</span>
+            <div style="display: flex; justify-content: space-between; padding: 6px 10px; background-color: var(--studio-surface-elevated); border-radius: var(--radius-sm); font-size: 12px;">
+              <span style="font-weight: 600; color: var(--text-primary);">${w.name || w.id || 'Interactive Workflow'}</span>
+              <span style="font-family: var(--font-mono); color: var(--text-muted);">${w.action || w.target || 'CDP Exploration'}</span>
             </div>
           `).join('');
         } else {
-          modelWorkflowsList.innerHTML = '<span class="empty-cell">Autonomous workflow discovery logged during browser exploration.</span>';
+          modelWorkflowsList.innerHTML = '<span class="form-hint">Autonomous workflow discovery logged during browser exploration.</span>';
         }
       }
     } catch (e) {
@@ -406,18 +476,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Render Script View
+  // Render Script
   function renderScript(scenes) {
     if (!scenes || scenes.length === 0) return;
     scriptContainer.innerHTML = scenes.map((s, idx) => `
-      <div class="script-scene-block">
-        <h5>SCENE ${idx + 1}: ${s.title.toUpperCase()} (${s.evidenceState || 'VERIFIED'})</h5>
-        <p>${s.narrationText}</p>
+      <div style="padding: 12px; background-color: var(--studio-surface); border-radius: var(--radius-sm); margin-bottom: 8px;">
+        <span class="form-hint" style="font-weight: 700;">SCENE 0${idx + 1}: ${s.title.toUpperCase()} (${s.evidenceState || 'VERIFIED'})</span>
+        <p style="margin-top: 6px; font-size: 13px; color: var(--text-primary); line-height: 1.5;">${s.narrationText}</p>
       </div>
     `).join('');
   }
 
-  // Open Selective Regeneration Modal
+  // Selective Scene Regeneration Modal
   window.__openRegenModal = (sceneIndex) => {
     if (!currentProjectData || !currentProjectData.manifest) return;
     const scene = currentProjectData.manifest.scenes[sceneIndex];
@@ -429,73 +499,68 @@ document.addEventListener('DOMContentLoaded', () => {
     regenModal.classList.add('active');
   };
 
-  // Close Modal
   function closeModal() {
     regenModal.classList.remove('active');
   }
-  btnCloseModal.addEventListener('click', closeModal);
-  btnCancelModal.addEventListener('click', closeModal);
+  if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+  if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
 
-  // Confirm Regeneration
-  btnConfirmRegen.addEventListener('click', async () => {
-    const sceneIdx = parseInt(regenSceneIndex.value, 10);
-    const newText = regenNarrationText.value.trim();
-    const reRecord = regenRerecordFootage.checked;
+  if (btnConfirmRegen) {
+    btnConfirmRegen.addEventListener('click', async () => {
+      const sceneIdx = parseInt(regenSceneIndex.value, 10);
+      const newText = regenNarrationText.value.trim();
+      const reRecord = regenRerecordFootage.checked;
 
-    closeModal();
-    btnSubmit.disabled = true;
-    btnSubmit.textContent = `REGENERATING SCENE ${sceneIdx + 1}...`;
+      closeModal();
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = `REGENERATING SCENE ${sceneIdx + 1}...`;
 
-    try {
-      const res = await fetch(`/api/projects/${currentProjectId}/regenerate-scene`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sceneIndex: sceneIdx,
-          narrationText: newText,
-          reRecord
-        })
-      });
+      try {
+        const res = await fetch(`/api/projects/${currentProjectId}/regenerate-scene`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sceneIndex: sceneIdx,
+            narrationText: newText,
+            reRecord
+          })
+        });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to trigger regeneration');
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to trigger regeneration');
+        }
+      } catch (err) {
+        showNotification(`Regeneration Error: ${err.message}`, true);
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
       }
-    } catch (err) {
-      alert(`Regeneration Error: ${err.message}`);
-      btnSubmit.disabled = false;
-      btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
-    }
-  });
+    });
+  }
 
-  // Handle regenerated scene result
   function onSceneRegenerated(sceneIndex, result) {
     btnSubmit.disabled = false;
     btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
 
-    // Update project state
-    if (currentProjectData) {
+    if (currentProjectData && currentProjectData.manifest) {
       currentProjectData.manifest.scenes[sceneIndex] = result.scene;
     }
 
-    // Refresh Video Player
     const videoUrl = `/api/projects/${currentProjectId}/video?t=${Date.now()}`;
     studioVideo.src = videoUrl;
     studioVideo.play().catch(() => {});
 
-    // Re-render views
-    renderTimelineScenes(currentProjectData.manifest.scenes);
+    renderEditorialTimeline(currentProjectData.manifest.scenes);
     renderScript(currentProjectData.manifest.scenes);
-
-    alert(`✅ Scene ${sceneIndex + 1} selectively regenerated and video updated!`);
+    showNotification(`Scene ${sceneIndex + 1} regenerated and master video updated`);
   }
 
-  // Duration Slider Input
+  // Duration Slider
   durationSlider.addEventListener('input', (e) => {
     durationVal.textContent = `${e.target.value}s`;
   });
 
-  // Aspect Ratio Buttons
+  // Aspect Ratio Switcher
   ratioButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       ratioButtons.forEach(b => b.classList.remove('active'));
@@ -504,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Mode Selection Cards
+  // Strategy Mode Selector
   modeCards.forEach(card => {
     card.addEventListener('click', () => {
       modeCards.forEach(c => c.classList.remove('active'));
@@ -514,37 +579,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Tab Navigation
+  // Workspace Tabs
   tabButtons.forEach(tab => {
     tab.addEventListener('click', () => {
-      tabButtons.forEach(t => t.classList.remove('active'));
-      tabContents.forEach(c => c.classList.remove('active'));
+      tabButtons.forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tabPanes.forEach(p => p.classList.remove('active'));
 
       tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
       const targetId = tab.dataset.tab;
-      const targetContent = document.getElementById(targetId);
-      if (targetContent) targetContent.classList.add('active');
+      const pane = document.getElementById(targetId);
+      if (pane) pane.classList.add('active');
     });
   });
 
-  // Natural Language Regeneration Chips (PRD Section 16)
-  if (regenChips) {
-    regenChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        if (inputRegenPrompt) {
-          inputRegenPrompt.value = chip.dataset.prompt;
-          inputRegenPrompt.focus();
-        }
-      });
+  // Natural Language Regeneration Presets
+  regenChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (inputRegenPrompt) {
+        inputRegenPrompt.value = chip.dataset.prompt;
+        inputRegenPrompt.focus();
+      }
     });
-  }
+  });
 
-  // Natural Language Regeneration Form Submission (PRD Section 16)
+  // Natural Language Regeneration Submit
   if (regenIntentForm) {
     regenIntentForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!currentProjectId) {
-        alert('Please produce or load a video project first.');
+        showNotification('Please load or produce a project first.', true);
         return;
       }
 
@@ -564,23 +631,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to start regeneration');
 
-        updateProgress(15, 'Creative Director', `Natural language regeneration initiated: "${prompt}"`);
+        updateRailProgress(15, 'CREATIVE DIRECTOR', `Natural language regeneration initiated: "${prompt}"`);
       } catch (err) {
-        alert(`Regeneration Error: ${err.message}`);
+        showNotification(`Regeneration Error: ${err.message}`, true);
         btnRegenSubmit.disabled = false;
         btnRegenSubmit.textContent = 'Regenerate Video';
       }
     });
   }
 
-  // Artifact Cards Click to View Raw Content
+  // Section 24 Artifact Cards Click
   document.querySelectorAll('.artifact-card').forEach(card => {
     card.addEventListener('click', async () => {
       const fileName = card.dataset.file;
       if (!fileName) return;
 
       if (!currentProjectId) {
-        alert('Run a production project first to inspect artifacts.');
+        showNotification('Produce or select a project first to inspect artifacts.', true);
         return;
       }
 
@@ -604,22 +671,116 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Artifact Modal Close
   function closeArtModal() {
     if (artifactModal) artifactModal.classList.remove('active');
   }
   if (btnCloseArtModal) btnCloseArtModal.addEventListener('click', closeArtModal);
   if (btnCloseArtFooter) btnCloseArtFooter.addEventListener('click', closeArtModal);
 
-  // Load Latest Existing Project on Startup
-  async function loadLatestProject() {
+  // Creative Archive Drawer / Modal
+  if (btnOpenArchive) {
+    btnOpenArchive.addEventListener('click', async () => {
+      archiveModal.classList.add('active');
+      archiveProjectsList.innerHTML = '<span class="form-hint">Loading past productions...</span>';
+
+      try {
+        const res = await fetch('/api/projects');
+        if (!res.ok) throw new Error('Failed to load project archive');
+        const data = await res.json();
+        const projects = data.projects || [];
+
+        if (projects.length === 0) {
+          archiveProjectsList.innerHTML = '<span class="form-hint">No past productions found in archive.</span>';
+          return;
+        }
+
+        archiveProjectsList.innerHTML = projects.map(p => `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: var(--studio-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+            <div>
+              <span style="font-weight: 700; font-size: 13px; color: var(--text-primary);">${p.manifest?.projectTitle || p.id}</span>
+              <div style="margin-top: 4px; display: flex; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+                <span>${p.inputs?.mode || 'launch'}</span>
+                <span>&bull;</span>
+                <span>${p.inputs?.duration || 60}s</span>
+                <span>&bull;</span>
+                <span>${p.inputs?.aspectRatio || '16:9'}</span>
+                <span>&bull;</span>
+                <span style="color: ${p.status === 'COMPLETED' ? 'var(--status-verified)' : 'var(--text-secondary)'};">${p.status}</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="window.__loadArchiveProject('${p.id}')">
+              Open in Studio
+            </button>
+          </div>
+        `).join('');
+      } catch (err) {
+        archiveProjectsList.innerHTML = `<span class="form-hint" style="color: var(--status-error);">Error: ${err.message}</span>`;
+      }
+    });
+  }
+
+  window.__loadArchiveProject = async (id) => {
+    try {
+      const res = await fetch(`/api/projects/${id}`);
+      if (!res.ok) throw new Error('Project not found');
+      const project = await res.json();
+      archiveModal.classList.remove('active');
+      currentProjectId = project.id;
+      currentProjectData = project;
+      onProductionCompleted(project);
+      showNotification(`Loaded archived production: ${project.manifest?.projectTitle || project.id}`);
+    } catch (e) {
+      showNotification(`Failed to load project: ${e.message}`, true);
+    }
+  };
+
+  function closeArchiveModal() {
+    if (archiveModal) archiveModal.classList.remove('active');
+  }
+  if (btnCloseArchive) btnCloseArchive.addEventListener('click', closeArchiveModal);
+  if (btnCloseArchiveFooter) btnCloseArchiveFooter.addEventListener('click', closeArchiveModal);
+
+  // Subtle Notification Toast
+  function showNotification(text, isError = false) {
+    let toast = document.getElementById('studio-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'studio-toast';
+      toast.style.position = 'fixed';
+      toast.style.bottom = '24px';
+      toast.style.right = '24px';
+      toast.style.padding = '10px 16px';
+      toast.style.borderRadius = 'var(--radius-sm)';
+      toast.style.fontFamily = 'var(--font-mono)';
+      toast.style.fontSize = '12px';
+      toast.style.zIndex = '999';
+      toast.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+      toast.style.transition = 'all 200ms ease-out';
+      document.body.appendChild(toast);
+    }
+
+    toast.style.backgroundColor = isError ? 'var(--studio-base)' : 'var(--studio-surface-elevated)';
+    toast.style.border = isError ? '1px solid var(--status-error)' : '1px solid var(--border-muted)';
+    toast.style.color = isError ? 'var(--status-error)' : 'var(--text-primary)';
+    toast.textContent = text;
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => { toast.style.display = 'none'; }, 200);
+    }, 4000);
+  }
+
+  // Load Latest Project on startup
+  async function loadInitialProject() {
     try {
       const res = await fetch('/api/projects');
       if (!res.ok) return;
       const data = await res.json();
       if (data.projects && data.projects.length > 0) {
-        const latest = data.projects[0];
-        if (latest.status === 'COMPLETED' || latest.finalVideo) {
+        const latest = data.projects.find(p => p.status === 'COMPLETED' || p.finalVideo) || data.projects[0];
+        if (latest && (latest.status === 'COMPLETED' || latest.finalVideo)) {
           currentProjectId = latest.id;
           currentProjectData = latest;
           onProductionCompleted(latest);
@@ -630,7 +791,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Start WebSocket and load initial state
   connectWebSocket();
-  loadLatestProject();
+  loadInitialProject();
 });
