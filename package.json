@@ -12,8 +12,8 @@
     "build": "echo 'Static studio assets ready' && npm run typecheck",
     "cli": "node cli.js",
     "demo": "node cli.js --duration 30 --mode launch",
-    "test": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/unit/sourceMode.test.js && node tests/integration/pipeline.test.js && node tests/e2e/production.test.js",
-    "test:unit": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/unit/sourceMode.test.js",
+    "test": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/unit/sourceMode.test.js && node tests/unit/durationAndLiveMode.test.js && node tests/integration/pipeline.test.js && node tests/e2e/production.test.js",
+    "test:unit": "node tests/unit/intent.test.js && node tests/unit/evidence.test.js && node tests/unit/sceneManifest.test.js && node tests/unit/sourceMode.test.js && node tests/unit/durationAndLiveMode.test.js",
     "test:integration": "node tests/integration/pipeline.test.js",
     "test:e2e": "node tests/e2e/production.test.js",
     "typecheck": "tsc --noEmit"

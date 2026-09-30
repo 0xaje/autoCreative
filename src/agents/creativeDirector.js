@@ -109,11 +109,19 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
 
     const isDemo = sourceMode === 'DEMO';
     const isRepoExec = sourceMode === 'REPOSITORY_EXECUTED';
+    const isLiveUrl = sourceMode === 'LIVE_URL';
     const modeBadge = isDemo ? ' [SAMPLE DEMO]' : sourceMode === 'REPOSITORY_ANALYSIS_ONLY' ? ' [CODEBASE OVERVIEW]' : isRepoExec ? ' [REPOSITORY RUNTIME]' : '';
+
+    const formatContentType = (ct) => {
+      if (ct === 'demo' || ct === 'product_demo') {
+        return isLiveUrl ? 'LIVE WALKTHROUGH' : 'FEATURE SHOWCASE';
+      }
+      return ct.replace(/_/g, ' ').toUpperCase();
+    };
 
     // Format PRD Scene Manifest
     const sceneManifest = {
-      projectTitle: `${productName} — ${contentType.replace(/_/g, ' ').toUpperCase()}${modeBadge}`,
+      projectTitle: `${productName} — ${formatContentType(contentType)}${modeBadge}`,
       sourceMode,
       creative_mode: creativeMode,
       ai_model: aiModel,
@@ -163,11 +171,15 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
 
     // 1. Social short or under 30s
     if (contentType === 'social_short' || totalDuration <= 30) {
+      const hookDur = Math.max(Math.round(totalDuration * 0.2), 5);
+      const outroDur = Math.max(Math.round(totalDuration * 0.25), 6);
+      const midDur = totalDuration - (hookDur + outroDur);
+
       if (isRepoOnly) {
         return [
           {
             id: 'hook',
-            duration: 6,
+            duration: hookDur,
             type: 'cinematic_hook',
             purpose: 'High-energy hook introducing repository architecture',
             voiceover: `Here is a code breakdown of ${productName}. Built for speed and reliability.`,
@@ -177,7 +189,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           },
           {
             id: 'code_overview',
-            duration: Math.max(totalDuration - 14, 10),
+            duration: midDur,
             type: 'code_walkthrough',
             purpose: 'Demonstrate verified codebase structure and tech stack',
             voiceover: `Examining the codebase, ${f1} provides robust execution with verified dependencies.`,
@@ -188,7 +200,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           },
           {
             id: 'outro_cta',
-            duration: 8,
+            duration: outroDur,
             type: 'call_to_action',
             purpose: 'Final call to action and repository access',
             voiceover: `Check out the repository and start building with ${productName}.`,
@@ -202,7 +214,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
       return [
         {
           id: 'hook',
-          duration: 5,
+          duration: hookDur,
           type: 'cinematic_hook',
           purpose: 'High-energy hook introducing the problem',
           voiceover: enhanceHook
@@ -214,18 +226,18 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         },
         {
           id: 'product_demo',
-          duration: Math.max(totalDuration - 13, 10),
+          duration: midDur,
           type: 'product_demo',
           purpose: 'Demonstrate primary live product workflow',
           voiceover: `Watch this. In the live interface, ${f1} executes seamlessly with verified performance.`,
           visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
           title: isRepoExec ? 'Repository Runtime' : 'Live Product Action',
-          overlay: { lowerThird: { title: isRepoExec ? 'Repository Runtime' : 'Live Capability', subtitle: f1 }, badge: isRepoExec ? 'VERIFIED REPO RUNTIME' : (isDemo ? 'DEMO EVIDENCE' : 'VERIFIED EVIDENCE') }
+          overlay: { lowerThird: { title: isRepoExec ? 'Repository Runtime' : 'Live Capability', subtitle: f1 }, badge: isRepoExec ? 'VERIFIED REPO RUNTIME' : (isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW') }
         },
         {
           id: 'outro_cta',
-          duration: 8,
+          duration: outroDur,
           type: 'call_to_action',
           purpose: 'Final call to action and momentum',
           voiceover: `Experience ${productName} today. Link in description.`,
@@ -236,20 +248,26 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
       ];
     }
 
-    // 2. Standard 5-scene broadcast structure
-    const baseDuration = Math.round(totalDuration / 5);
-    const archDuration = condenseArch ? Math.max(baseDuration - 3, 4) : baseDuration;
-    const demoBonus = condenseArch ? 3 : 0;
+    // 2. Standard 5-scene broadcast structure summing strictly to totalDuration
+    const d1 = Math.max(Math.round(totalDuration * 0.16), 6);
+    const d2 = Math.max(Math.round(totalDuration * (condenseArch ? 0.15 : 0.20)), 6);
+    const d3 = Math.max(Math.round(totalDuration * (condenseArch ? 0.31 : 0.26)), 9);
+    const d4 = Math.max(Math.round(totalDuration * 0.24), 8);
+    const d5 = totalDuration - (d1 + d2 + d3 + d4);
+
+    const isLong = totalDuration >= 60;
 
     // Truthful REPOSITORY_ANALYSIS_ONLY scenes (no fake UI recordings!)
     if (isRepoOnly) {
       return [
         {
           id: 'hook',
-          duration: Math.max(baseDuration - 2, 7),
+          duration: d1,
           type: 'hook',
           purpose: 'Introduce repository problem and technical motivation',
-          voiceover: `Every great piece of software starts with sound architecture. Introducing ${productName}, ${tagline}.`,
+          voiceover: isLong
+            ? `Every great piece of software starts with sound architecture. Introducing ${productName}, ${tagline}. Built from the ground up for scalable performance.`
+            : `Every great piece of software starts with sound architecture. Introducing ${productName}, ${tagline}.`,
           visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
           evidenceState: 'VERIFIED',
           title: 'Repository Overview & Motivation',
@@ -257,10 +275,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         },
         {
           id: 'product_reveal',
-          duration: archDuration,
+          duration: d2,
           type: 'problem',
           purpose: 'Reveal the architecture and codebase organization',
-          voiceover: `Architected for modularity and scalability, ${productName} organizes its systems to solve complex engineering challenges.`,
+          voiceover: isLong
+            ? `Architected for modularity and scalability, ${productName} organizes its systems to solve complex engineering challenges with clean separation of concerns.`
+            : `Architected for modularity and scalability, ${productName} organizes its systems to solve complex engineering challenges.`,
           visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
           evidenceState: 'VERIFIED',
           title: 'The Challenge & Architecture',
@@ -268,10 +288,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         },
         {
           id: 'feature_1',
-          duration: baseDuration + demoBonus + 2,
+          duration: d3,
           type: 'code_stack',
           purpose: 'Demonstrate code structure and technical dependencies',
-          voiceover: `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability.`,
+          voiceover: isLong
+            ? `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability across all core service modules.`
+            : `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability.`,
           visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
           evidenceState: 'VERIFIED',
           title: 'Code Structure & Stack',
@@ -279,10 +301,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         },
         {
           id: 'feature_2',
-          duration: baseDuration + 2,
+          duration: d4,
           type: 'capabilities',
           purpose: 'Highlight verified repository capabilities',
-          voiceover: `Within the repository structure, ${f2} is thoroughly documented and configured for dependable operation.`,
+          voiceover: isLong
+            ? `Within the repository structure, ${f2} is thoroughly documented and configured for dependable continuous operation in production environments.`
+            : `Within the repository structure, ${f2} is thoroughly documented and configured for dependable operation.`,
           visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Verified Capabilities',
@@ -290,10 +314,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         },
         {
           id: 'outro_cta',
-          duration: Math.max(baseDuration - 3, 7),
+          duration: d5,
           type: 'ending',
           purpose: 'Encourage developer exploration and contributions',
-          voiceover: `Explore the repository, review the documentation, and start building with ${productName} today.`,
+          voiceover: isLong
+            ? `Explore the repository, review the documentation, and start building with ${productName} today. Complete source code is ready to clone.`
+            : `Explore the repository, review the documentation, and start building with ${productName} today.`,
           visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],
           evidenceState: 'VERIFIED',
           title: 'Developer Call to Action',
@@ -306,21 +332,25 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
     return [
       {
         id: 'hook',
-        duration: Math.max(baseDuration - 2, 7),
+        duration: d1,
         type: 'hook',
         purpose: 'Introduce the problem and capture immediate attention',
-        voiceover: `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}.`,
+        voiceover: isLong
+          ? `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}. Engineered for teams that demand speed and precision.`
+          : `Every great breakthrough begins with a simpler way to build. Introducing ${productName}, ${tagline}.`,
         visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
         evidenceState: 'VERIFIED',
         title: 'Cinematic Hook & Title',
-        overlay: { badge: isDemo ? 'SAMPLE DEMO' : 'PRODUCT LAUNCH' }
+        overlay: { badge: isDemo ? 'SAMPLE DEMO' : 'LIVE SHOWCASE' }
       },
       {
         id: 'product_reveal',
-        duration: archDuration,
+        duration: d2,
         type: 'problem',
         purpose: 'Reveal the architecture and the core solution',
-        voiceover: `Traditional tools are fragmented and manual. ${productName} reimagines the entire experience into an intuitive, unified platform.`,
+        voiceover: isLong
+          ? `Traditional tools are fragmented and manual, creating unnecessary bottlenecks. ${productName} reimagines the entire experience into an intuitive, unified platform that keeps you in flow.`
+          : `Traditional tools are fragmented and manual. ${productName} reimagines the entire experience into an intuitive, unified platform.`,
         visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
         evidenceState: 'VERIFIED',
         title: 'The Challenge & Architecture',
@@ -328,32 +358,38 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
       },
       {
         id: 'feature_1',
-        duration: baseDuration + demoBonus + 2,
+        duration: d3,
         type: 'product_demo',
         purpose: 'Demonstrate primary live workflow with real product footage',
-        voiceover: `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}.`,
+        voiceover: isLong
+          ? `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}. Every interaction executes smoothly with verified real-time feedback.`
+          : `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}.`,
         visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
         evidenceState: 'VERIFIED',
         title: 'Core Product in Action',
-        overlay: { lowerThird: { title: 'Live Capability', subtitle: f1 }, badge: isDemo ? 'DEMO EVIDENCE' : 'VERIFIED EVIDENCE' }
+        overlay: { lowerThird: { title: 'Live Capability', subtitle: f1 }, badge: isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW' }
       },
       {
         id: 'feature_2',
-        duration: baseDuration + 2,
+        duration: d4,
         type: 'feature',
         purpose: 'Demonstrate deep dive feature with real telemetry results',
-        voiceover: `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
+        voiceover: isLong
+          ? `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics. Everything operates seamlessly under load with continuous verification.`
+          : `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
         visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
         evidenceState: 'VERIFIED',
         title: 'Deep Dive & Real Results',
-        overlay: { lowerThird: { title: 'Performance Engine', subtitle: f2 }, badge: isDemo ? 'DEMO EVIDENCE' : 'VERIFIED EVIDENCE' }
+        overlay: { lowerThird: { title: 'Performance Engine', subtitle: f2 }, badge: isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY' }
       },
       {
         id: 'outro_cta',
-        duration: Math.max(baseDuration - 3, 7),
+        duration: d5,
         type: 'ending',
         purpose: 'Encourage adoption with clear next steps',
-        voiceover: `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output.`,
+        voiceover: isLong
+          ? `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output. Launch the live application today and start creating.`
+          : `Whether you are shipping for clients or building your own vision, ${productName} is ready to elevate your creative output.`,
         visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],
         evidenceState: 'VERIFIED',
         title: 'Momentum & Call to Action',

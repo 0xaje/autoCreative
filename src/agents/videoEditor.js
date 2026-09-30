@@ -25,14 +25,14 @@ class VideoEditor {
       });
     }
 
-    // Step 1: Normalize each scene clip so that its duration exactly matches its scene audio duration
+    // Step 1: Normalize each scene clip so that its duration exactly matches its allocated timeline duration
     // and its video dimensions match target resolution
     const normalizedSceneClips = [];
 
     for (let i = 0; i < scenes.length; i++) {
       const scene = scenes[i];
       const videoSource = scene.videoPath;
-      const targetDuration = scene.audioDuration || scene.targetDuration || 5;
+      const targetDuration = Math.max(scene.duration || scene.targetDuration || 5, Math.ceil(scene.audioDuration || 0));
 
       const normalizedPath = path.join(renderDir, `norm-${scene.id}.mp4`);
 
@@ -89,6 +89,8 @@ class VideoEditor {
       });
     }
 
+    const totalTargetDuration = scenes.reduce((acc, s) => acc + Math.max(s.duration || s.targetDuration || 5, Math.ceil(s.audioDuration || 0)), 0);
+
     const masterArgs = [
       '-y',
       '-i', concatenatedVideo,
@@ -96,6 +98,7 @@ class VideoEditor {
       '-c:v', 'copy',
       '-c:a', 'aac',
       '-b:a', '192k',
+      '-t', `${totalTargetDuration.toFixed(2)}`,
       '-shortest',
       '-movflags', '+faststart',
       finalMp4Path

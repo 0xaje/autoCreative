@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const form = document.getElementById('production-form');
   const btnSubmit = document.getElementById('btn-submit');
-  const btnQuickDemo = document.getElementById('btn-quick-demo');
   const btnOpenArchive = document.getElementById('btn-open-archive');
   const durationSlider = document.getElementById('input-duration');
   const durationVal = document.getElementById('duration-val');
@@ -221,11 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gh.style.display = 'none';
         live.style.display = 'block';
         live.focus();
-      } else if (type === 'demo') {
-        gh.style.display = 'block';
-        live.style.display = 'block';
-        gh.value = 'https://github.com/example/pulseflow-analytics';
-        live.value = `${window.location.origin}/demo-apps/saas-analytics/index.html`;
       }
     });
   });
@@ -242,8 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceId = document.getElementById('select-voice').value;
     const musicStyle = document.getElementById('select-music').value;
 
-    const activeTab = document.querySelector('.source-tab.active');
-    const isDemo = (activeTab && activeTab.dataset.source === 'demo') || (liveUrl && liveUrl.includes('/demo-apps/saas-analytics'));
+    const isDemo = false;
 
     btnSubmit.disabled = true;
     btnSubmit.textContent = 'PRODUCING VIDEO (AUTONOMOUS)...';
@@ -267,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
           aspectRatio: currentAspect,
           voiceId,
           musicStyle,
-          isDemo: !!isDemo
+          isDemo: false
         })
       });
 
@@ -281,16 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'PRODUCE BROADCAST MP4';
     }
-  });
-
-  // Quick Demo / Sample Button
-  btnQuickDemo.addEventListener('click', () => {
-    const demoTab = document.querySelector('.source-tab[data-source="demo"]');
-    if (demoTab) demoTab.click();
-    document.getElementById('input-github').value = 'https://github.com/example/pulseflow-analytics';
-    document.getElementById('input-live').value = `${window.location.origin}/demo-apps/saas-analytics/index.html`;
-    document.getElementById('input-prompt').value = 'Create a 60-second product launch video showcasing PulseFlow live analytics, autonomous scaling, and enterprise telemetry.';
-    form.dispatchEvent(new Event('submit'));
   });
 
   // When production finishes successfully

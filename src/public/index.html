@@ -41,13 +41,6 @@
         </svg>
         Creative Archive
       </button>
-
-      <button type="button" class="btn btn-secondary" id="btn-quick-demo" aria-label="Load Instant Sample Production">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-        Sample Project
-      </button>
     </div>
   </header>
 
@@ -58,27 +51,26 @@
     <aside class="source-desk" aria-label="Creative Direction Desk">
       <div class="desk-header">
         <h2>Source & Creative Brief</h2>
-        <p>Supply source repository, live app, or prompt instructions</p>
+        <p>Supply live application URL, repository, or prompt instructions</p>
       </div>
 
       <form id="production-form" class="desk-body">
         
         <!-- Source Inputs with Switcher -->
         <div class="form-section">
-          <label class="form-label" for="input-github">
+          <label class="form-label" for="input-live">
             <span>Primary Source</span>
-            <span class="form-hint">Repo, Live URL, or Local</span>
+            <span class="form-hint">Live Application URL or Repo</span>
           </label>
           
           <div class="source-tabs" role="tablist" aria-label="Source Type Selection">
-            <button type="button" class="source-tab active" data-source="repo" role="tab" aria-selected="true">GitHub Repo</button>
-            <button type="button" class="source-tab" data-source="live" role="tab" aria-selected="false">Live URL</button>
-            <button type="button" class="source-tab" data-source="demo" role="tab" aria-selected="false">Demo App</button>
+            <button type="button" class="source-tab active" data-source="live" role="tab" aria-selected="true">Live Application URL</button>
+            <button type="button" class="source-tab" data-source="repo" role="tab" aria-selected="false">GitHub Repository</button>
           </div>
 
           <div id="source-input-container" style="margin-top: 8px;">
-            <input type="text" id="input-github" class="input-box" placeholder="https://github.com/organization/repository" autocomplete="off" aria-label="GitHub Repository URL">
-            <input type="text" id="input-live" class="input-box" placeholder="https://application.example.com" style="margin-top: 6px;" autocomplete="off" aria-label="Live Application URL">
+            <input type="text" id="input-live" class="input-box" placeholder="https://your-live-app.com or http://localhost:3000" autocomplete="off" aria-label="Live Application URL">
+            <input type="text" id="input-github" class="input-box" placeholder="https://github.com/organization/repository" style="display: none; margin-top: 6px;" autocomplete="off" aria-label="GitHub Repository URL">
           </div>
         </div>
 
@@ -105,8 +97,8 @@
             </label>
             <label class="mode-option">
               <input type="radio" name="mode" value="demo">
-              <span class="mode-option-name">Product Demo</span>
-              <span class="mode-option-desc">Workflow-focused UI walkthrough</span>
+              <span class="mode-option-name">Live Walkthrough</span>
+              <span class="mode-option-desc">Workflow-focused live application tour</span>
             </label>
             <label class="mode-option">
               <input type="radio" name="mode" value="presentation">

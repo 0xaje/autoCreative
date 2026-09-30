@@ -10,47 +10,93 @@ class AudioEngineer {
 
   /**
    * Produce fully mixed, sidechained/ducked master soundtrack combining
-   * all scene voiceovers with background ambient music.
+   * all scene voiceovers with background ambient music, with frame-accurate timeline pacing.
    */
   async produceMasterAudio({ scenes, totalDuration, musicStyle = 'cinematic', projectDir, onProgress }) {
     const audioDir = ensureDir(path.join(projectDir, 'audio'));
-    const soundtrackPath = path.join(audioDir, 'soundtrack-bed.aac');
-    const masterVoicePath = path.join(audioDir, 'narration-master.aac');
-    const masterMixPath = path.join(audioDir, 'master-mix.aac');
+    const soundtrackPath = path.join(audioDir, 'soundtrack-bed.m4a');
+    const masterVoicePath = path.join(audioDir, 'narration-master.m4a');
+    const masterMixPath = path.join(audioDir, 'master-mix.m4a');
 
-    if (onProgress) {
-      onProgress({
-        agent: 'Audio Engineer',
-        message: `Composing background soundtrack (${musicStyle}) for ${totalDuration.toFixed(1)}s timeline...`
-      });
-    }
-
-    // 1. Generate ambient soundtrack matching duration
-    await generateAmbientSoundtrack(soundtrackPath, Math.ceil(totalDuration) + 4, musicStyle);
-
-    // 2. Concatenate voice narration tracks in sequence
-    // Build ffmpeg concat list or amix with delays
     const validScenes = scenes.filter(s => s.audioPath && fs.existsSync(s.audioPath));
 
     if (validScenes.length === 0) {
       throw new Error('No valid voice narration tracks found for master mix');
     }
 
+    // Determine target timeline duration from scenes or parameter
+    const totalSceneTarget = validScenes.reduce((acc, s) => acc + (s.duration || s.targetDuration || 8), 0);
+    const targetDuration = Math.max(totalDuration || 60, totalSceneTarget);
+
     if (onProgress) {
       onProgress({
         agent: 'Audio Engineer',
-        message: 'Applying smart audio ducking (sidechain compression) and mixing master track...'
+        message: `Composing background soundtrack (${musicStyle}) for ${targetDuration.toFixed(1)}s timeline...`
       });
     }
 
-    // Create a concat filter for all voice scenes
-    // Each scene has duration: s.duration
-    const inputs = [];
-    validScenes.forEach(s => {
-      inputs.push('-i', s.audioPath);
-    });
+    // 1. Generate ambient soundtrack matching duration (+4s tail buffer)
+    await generateAmbientSoundtrack(soundtrackPath, Math.ceil(targetDuration) + 4, musicStyle);
 
-    const concatFilter = validScenes.map((_, idx) => `[${idx}:a]`).join('') + `concat=n=${validScenes.length}:v=0:a=1[voice]`;
+    // 2. Pace and pad each scene voice track to its exact scene duration
+    if (onProgress) {
+      onProgress({
+        agent: 'Audio Engineer',
+        message: 'Synchronizing neural voice tracks across scene timeline boundaries...'
+      });
+    }
+
+    const paddedVoiceFiles = [];
+
+    for (let i = 0; i < validScenes.length; i++) {
+      const s = validScenes[i];
+      const sceneTargetDur = Math.max(s.duration || s.targetDuration || 6, 4);
+      let actualDuration = s.audioDuration;
+      if (!actualDuration) {
+        try {
+          const sMeta = await getVideoMetadata(s.audioPath);
+          actualDuration = sMeta.duration;
+        } catch (e) {
+          actualDuration = 4;
+        }
+      }
+
+      const paddedPath = path.join(audioDir, `scene-voice-padded-${s.id}.m4a`);
+
+      if (actualDuration < sceneTargetDur - 0.15) {
+        const padSeconds = sceneTargetDur - actualDuration;
+        // Pad silence to end of scene speech so the subsequent scene begins precisely on scene change
+        await runFFmpeg([
+          '-y',
+          '-i', s.audioPath,
+          '-f', 'lavfi',
+          '-i', `sine=frequency=0:duration=${padSeconds.toFixed(3)}`,
+          '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1[out]',
+          '-map', '[out]',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          paddedPath
+        ]);
+      } else {
+        // Voice fills scene or slightly exceeds; trim/normalize to scene duration
+        await runFFmpeg([
+          '-y',
+          '-i', s.audioPath,
+          '-t', `${sceneTargetDur.toFixed(3)}`,
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          paddedPath
+        ]);
+      }
+
+      paddedVoiceFiles.push(paddedPath);
+    }
+
+    // Concatenate all padded scene voice tracks
+    const inputs = [];
+    paddedVoiceFiles.forEach(p => inputs.push('-i', p));
+
+    const concatFilter = paddedVoiceFiles.map((_, idx) => `[${idx}:a]`).join('') + `concat=n=${paddedVoiceFiles.length}:v=0:a=1[voice]`;
 
     const voiceConcatArgs = [
       '-y',
@@ -65,9 +111,13 @@ class AudioEngineer {
     await runFFmpeg(voiceConcatArgs);
 
     // 3. Duck background music under the master voice track
-    // We use ffmpeg sidechaincompress or volume curve
-    // [1:a] as music, [0:a] as voice
-    // sidechaincompress lowers [1:a] whenever [0:a] has volume
+    if (onProgress) {
+      onProgress({
+        agent: 'Audio Engineer',
+        message: 'Applying smart audio ducking (sidechain compression) and mixing master track...'
+      });
+    }
+
     const duckingArgs = [
       '-y',
       '-i', masterVoicePath,
@@ -77,6 +127,7 @@ class AudioEngineer {
         [0:a][music_low]amix=inputs=2:duration=first:dropout_transition=2[out]
       `.replace(/\s+/g, ' ').trim(),
       '-map', '[out]',
+      '-t', `${targetDuration.toFixed(2)}`,
       '-c:a', 'aac',
       '-b:a', '192k',
       masterMixPath
@@ -90,7 +141,9 @@ class AudioEngineer {
       masterMixPath,
       masterVoicePath,
       soundtrackPath,
-      duration: masterMeta.duration
+      soundtrackBedPath: soundtrackPath,
+      narrationMasterPath: masterVoicePath,
+      duration: masterMeta.duration || targetDuration
     };
   }
 }

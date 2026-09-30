@@ -289,6 +289,12 @@ class ProductionPipeline extends EventEmitter {
         scene.subtitles = voiceResult.subtitles;
 
         // Visuals (Recording or Motion Graphic)
+        // Ensure visual duration matches planned scene duration, accommodating audio if voice is longer
+        if (voiceResult && voiceResult.duration > (scene.duration || 6)) {
+          scene.duration = Math.ceil(voiceResult.duration + 0.5);
+        }
+        const sceneTargetDuration = Math.max(scene.duration || 8, Math.ceil(voiceResult.duration || 0));
+
         const primaryVisual = scene.visuals?.[0] || {};
         if (primaryVisual.source === 'browser_recording' || scene.type === 'product_demo') {
           if (!targetUrl) {
@@ -297,9 +303,9 @@ class ProductionPipeline extends EventEmitter {
           setStage(PROJECT_STATES.RECORDING, `Recording semantic product interaction for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Screen Recorder');
           try {
             const recordingResult = await this.screenRecorder.recordSceneFootage({
-              scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, overlay: scene.overlay, visualPlan: scene.visualPlan },
+              scene: { id: scene.id, title: scene.title, targetDuration: sceneTargetDuration, overlay: scene.overlay, visualPlan: scene.visualPlan },
               targetUrl,
-              durationSeconds: Math.ceil(voiceResult.duration),
+              durationSeconds: sceneTargetDuration,
               resolution,
               projectModel,
               projectDir,
@@ -314,9 +320,9 @@ class ProductionPipeline extends EventEmitter {
           setStage(PROJECT_STATES.GENERATING, `Rendering procedural motion graphics for Scene ${sceneStep}: "${scene.title}"...`, baseScenePct, 'Motion Designer');
           const motionType = primaryVisual.motionType || (scene.id === 'hook' ? 'intro_cinematic' : scene.id === 'product_reveal' ? 'problem_solution_split' : 'outro_cta');
           const motionResult = await this.motionDesigner.renderMotionClip({
-            scene: { id: scene.id, title: scene.title, targetDuration: scene.duration, visualPlan: { motionType }, overlay: scene.overlay },
+            scene: { id: scene.id, title: scene.title, targetDuration: sceneTargetDuration, visualPlan: { motionType }, overlay: scene.overlay },
             sourceAnalysis: projectModel,
-            durationSeconds: Math.ceil(voiceResult.duration),
+            durationSeconds: sceneTargetDuration,
             resolution,
             projectDir,
             onProgress: (p) => setStage(PROJECT_STATES.GENERATING, p.message, baseScenePct, p.agent)
@@ -331,11 +337,11 @@ class ProductionPipeline extends EventEmitter {
       fs.writeFileSync(path.join(projectDir, 'scene-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 
       // 6. Audio Engineer: COMPOSING
-      const totalAudioDuration = completedScenes.reduce((acc, s) => acc + (s.audioDuration || 5), 0);
-      setStage(PROJECT_STATES.COMPOSING, `Composing soundtrack and applying smart sidechain audio ducking (${totalAudioDuration.toFixed(1)}s)...`, 75, 'Audio Engineer');
+      const totalTimelineDuration = completedScenes.reduce((acc, s) => acc + (s.duration || 8), 0);
+      setStage(PROJECT_STATES.COMPOSING, `Composing soundtrack and applying smart sidechain audio ducking (${totalTimelineDuration.toFixed(1)}s)...`, 75, 'Audio Engineer');
       const masterAudio = await this.audioEngineer.produceMasterAudio({
         scenes: completedScenes,
-        totalDuration: totalAudioDuration,
+        totalDuration: totalTimelineDuration,
         musicStyle: musicStyle || 'cinematic',
         projectDir,
         onProgress: (p) => setStage(PROJECT_STATES.COMPOSING, p.message, 78, p.agent)
@@ -372,7 +378,7 @@ class ProductionPipeline extends EventEmitter {
         audioCodec: 'aac',
         crf: 19,
         preset: 'fast',
-        targetDuration: totalAudioDuration
+        targetDuration: totalTimelineDuration
       };
       fs.writeFileSync(path.join(projectDir, 'render-config.json'), JSON.stringify(renderConfig, null, 2), 'utf8');
       projectData.artifacts.renderConfig = path.join(projectDir, 'render-config.json');
