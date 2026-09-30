@@ -3,6 +3,7 @@ const path = require('path');
 const EventEmitter = require('events');
 const config = require('../config');
 const { ensureDir } = require('../utils/ffmpegHelper');
+const { getSafeProjectPath } = require('../utils/pathSanitizer');
 
 const IntentEngine = require('./intentEngine');
 const Researcher = require('./researcher');
@@ -67,7 +68,11 @@ class ProductionPipeline extends EventEmitter {
     provider
   }) {
     const id = projectId || `proj_${Date.now()}`;
-    const projectDir = ensureDir(path.join(config.PROJECTS_DIR, id));
+    const safeProjectDir = getSafeProjectPath(id);
+    if (!safeProjectDir) {
+      throw this.wrapError('INVALID_PROJECT_ID', `Invalid project ID format: ${id}`);
+    }
+    const projectDir = ensureDir(safeProjectDir);
 
     // Determine truthful source mode
     let sourceMode = 'LIVE_URL';
@@ -452,9 +457,11 @@ class ProductionPipeline extends EventEmitter {
    * Modifies only relevant production artifacts without repeating repo analysis or browser discovery!
    */
   async executeNaturalLanguageRegeneration(projectId, userRequest) {
-    const projectDir = path.join(config.PROJECTS_DIR, projectId);
+    const projectDir = getSafeProjectPath(projectId);
+    if (!projectDir || !fs.existsSync(path.join(projectDir, 'project.json'))) {
+      throw new Error(`Project ${projectId} not found`);
+    }
     const projectJsonPath = path.join(projectDir, 'project.json');
-    if (!fs.existsSync(projectJsonPath)) throw new Error(`Project ${projectId} not found`);
 
     const projectData = JSON.parse(fs.readFileSync(projectJsonPath, 'utf8'));
     const manifestPath = path.join(projectDir, 'scene-manifest.json');
@@ -707,11 +714,11 @@ class ProductionPipeline extends EventEmitter {
    * then re-mixes audio and re-renders the final broadcast MP4 without re-running full pipeline.
    */
   async regenerateScene(projectId, sceneIndex, options = {}) {
-    const projectDir = path.join(config.PROJECTS_DIR, projectId);
-    const projectJsonPath = path.join(projectDir, 'project.json');
-    if (!fs.existsSync(projectJsonPath)) {
+    const projectDir = getSafeProjectPath(projectId);
+    if (!projectDir || !fs.existsSync(path.join(projectDir, 'project.json'))) {
       throw this.wrapError('PROJECT_NOT_FOUND', `Project ${projectId} not found`);
     }
+    const projectJsonPath = path.join(projectDir, 'project.json');
 
     const projectData = JSON.parse(fs.readFileSync(projectJsonPath, 'utf8'));
     const manifestPath = path.join(projectDir, 'scene-manifest.json');

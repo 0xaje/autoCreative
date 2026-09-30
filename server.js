@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const config = require('./src/config');
 const ProductionPipeline = require('./src/agents/pipeline');
+const { getSafeProjectPath, getSafeArtifactPath, isValidProjectId } = require('./src/utils/pathSanitizer');
 
 const app = express();
 const server = http.createServer(app);
@@ -46,6 +47,16 @@ app.get('/api/metadata', (req, res) => {
   });
 });
 
+// Parameter validation middleware: guard against path traversal on all :id routes
+app.param('id', (req, res, next, id) => {
+  const safePath = getSafeProjectPath(id);
+  if (!safePath) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
+  }
+  req.projectDir = safePath;
+  next();
+});
+
 // API: List projects
 app.get('/api/projects', (req, res) => {
   try {
@@ -56,6 +67,7 @@ app.get('/api/projects', (req, res) => {
     const projects = [];
 
     for (const dir of dirs) {
+      if (!isValidProjectId(dir)) continue;
       const pJson = path.join(config.PROJECTS_DIR, dir, 'project.json');
       if (fs.existsSync(pJson)) {
         try {
@@ -74,7 +86,11 @@ app.get('/api/projects', (req, res) => {
 
 // API: Get single project details
 app.get('/api/projects/:id', (req, res) => {
-  const pJson = path.join(config.PROJECTS_DIR, req.params.id, 'project.json');
+  const projectDir = req.projectDir || getSafeProjectPath(req.params.id);
+  if (!projectDir) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
+  }
+  const pJson = path.join(projectDir, 'project.json');
   if (!fs.existsSync(pJson)) {
     return res.status(404).json({ error: 'Project not found' });
   }
@@ -136,6 +152,14 @@ app.post('/api/projects', async (req, res) => {
 app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
   try {
     const projectId = req.params.id;
+    const projectDir = req.projectDir || getSafeProjectPath(projectId);
+    if (!projectDir) {
+      return res.status(400).json({ error: 'Invalid project ID format' });
+    }
+    const pJson = path.join(projectDir, 'project.json');
+    if (!fs.existsSync(pJson)) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     const { sceneIndex, narrationText, visualPlan, voiceId, reRecord } = req.body;
 
     if (sceneIndex === undefined || sceneIndex === null) {
@@ -171,6 +195,14 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
 app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
   try {
     const projectId = req.params.id;
+    const projectDir = req.projectDir || getSafeProjectPath(projectId);
+    if (!projectDir) {
+      return res.status(400).json({ error: 'Invalid project ID format' });
+    }
+    const pJson = path.join(projectDir, 'project.json');
+    if (!fs.existsSync(pJson)) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
     const { userRequest } = req.body;
 
     if (!userRequest) {
@@ -206,9 +238,12 @@ app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
 app.get('/api/projects/:id/artifacts/:name', (req, res) => {
   try {
     const { id, name } = req.params;
-    const safeName = path.basename(name);
-    const filePath = path.join(config.PROJECTS_DIR, id, safeName);
+    const filePath = getSafeArtifactPath(id, name);
+    if (!filePath) {
+      return res.status(400).json({ error: 'Invalid project ID or artifact name' });
+    }
 
+    const safeName = path.basename(name);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: `Artifact ${safeName} not found` });
     }
@@ -227,7 +262,11 @@ app.get('/api/projects/:id/artifacts/:name', (req, res) => {
 
 // API: Get project status (Section 22)
 app.get('/api/projects/:id/status', (req, res) => {
-  const pJson = path.join(config.PROJECTS_DIR, req.params.id, 'project.json');
+  const projectDir = req.projectDir || getSafeProjectPath(req.params.id);
+  if (!projectDir) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
+  }
+  const pJson = path.join(projectDir, 'project.json');
   if (!fs.existsSync(pJson)) {
     return res.status(404).json({ error: 'Project not found' });
   }
@@ -249,7 +288,10 @@ app.get('/api/projects/:id/status', (req, res) => {
 
 // API: List project assets (Section 22)
 app.get('/api/projects/:id/assets', (req, res) => {
-  const projectDir = path.join(config.PROJECTS_DIR, req.params.id);
+  const projectDir = req.projectDir || getSafeProjectPath(req.params.id);
+  if (!projectDir) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
+  }
   if (!fs.existsSync(projectDir)) {
     return res.status(404).json({ error: 'Project not found' });
   }
@@ -287,6 +329,15 @@ app.get('/api/projects/:id/assets', (req, res) => {
 app.post('/api/projects/:id/regenerate', async (req, res) => {
   try {
     const projectId = req.params.id;
+    const projectDir = req.projectDir || getSafeProjectPath(projectId);
+    if (!projectDir) {
+      return res.status(400).json({ error: 'Invalid project ID format' });
+    }
+    const pJson = path.join(projectDir, 'project.json');
+    if (!fs.existsSync(pJson)) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
     const { userRequest, sceneIndex, narrationText, reRecord } = req.body;
 
     const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
@@ -315,7 +366,11 @@ app.post('/api/projects/:id/regenerate', async (req, res) => {
 
 // API: Stream video with range support
 app.get('/api/projects/:id/video', (req, res) => {
-  const videoPath = path.join(config.PROJECTS_DIR, req.params.id, 'output.mp4');
+  const projectDir = req.projectDir || getSafeProjectPath(req.params.id);
+  if (!projectDir) {
+    return res.status(400).json({ error: 'Invalid project ID format' });
+  }
+  const videoPath = path.join(projectDir, 'output.mp4');
   if (!fs.existsSync(videoPath)) {
     return res.status(404).send('Video not found or still rendering.');
   }
@@ -383,11 +438,13 @@ const gracefulShutdown = () => {
 process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
 
-server.listen(config.PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`🎬 Autonomous Creative Production Studio`);
-  console.log(`🚀 Studio UI running at: http://localhost:${config.PORT}`);
-  console.log(`=======================================================`);
-});
+if (require.main === module) {
+  server.listen(config.PORT, () => {
+    console.log(`=======================================================`);
+    console.log(`🎬 Autonomous Creative Production Studio`);
+    console.log(`🚀 Studio UI running at: http://localhost:${config.PORT}`);
+    console.log(`=======================================================`);
+  });
+}
 
 module.exports = { app, server };
