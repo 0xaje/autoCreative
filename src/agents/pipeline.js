@@ -523,10 +523,15 @@ class ProductionPipeline extends EventEmitter {
     }
 
     // 6. If aspect ratio changed ("make this vertical", "make it 9:16")
-    if (updatedIntent.aspect_ratio && updatedIntent.aspect_ratio !== manifest.aspectRatio) {
+    const currentAspectRatio = manifest.aspect_ratio || manifest.aspectRatio || config.DEFAULT_SPECS?.aspectRatio || '16:9';
+    if (updatedIntent.aspect_ratio && updatedIntent.aspect_ratio !== currentAspectRatio) {
       log('Creative Director', `Switching canvas layout to ${updatedIntent.aspect_ratio}...`, 30);
+      manifest.aspect_ratio = updatedIntent.aspect_ratio;
       manifest.aspectRatio = updatedIntent.aspect_ratio;
-      manifest.resolution = config.RESOLUTIONS[updatedIntent.aspect_ratio] || { width: 1080, height: 1920 };
+      const targetRes = (config.RESOLUTIONS && config.RESOLUTIONS[updatedIntent.aspect_ratio])
+        || (config.DEFAULT_SPECS && config.DEFAULT_SPECS.resolution)
+        || (updatedIntent.aspect_ratio === '9:16' ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 });
+      manifest.resolution = targetRes;
       needsVideoReassemble = true;
       needsVisualResync = true;
     }
@@ -667,6 +672,28 @@ class ProductionPipeline extends EventEmitter {
     };
     projectData.qc = qcReport;
     projectData.qcReport = qcReport;
+    if (projectData.inputs) {
+      if (manifest.aspect_ratio || manifest.aspectRatio) {
+        projectData.inputs.aspectRatio = manifest.aspect_ratio || manifest.aspectRatio;
+        projectData.inputs.aspect_ratio = manifest.aspect_ratio || manifest.aspectRatio;
+      }
+      if (manifest.duration) {
+        projectData.inputs.duration = manifest.duration;
+      }
+    }
+
+    const renderConfigPath = path.join(projectDir, 'render-config.json');
+    if (fs.existsSync(renderConfigPath)) {
+      try {
+        const renderConfig = JSON.parse(fs.readFileSync(renderConfigPath, 'utf8'));
+        renderConfig.resolution = manifest.resolution;
+        renderConfig.aspectRatio = manifest.aspect_ratio || manifest.aspectRatio;
+        renderConfig.aspect_ratio = manifest.aspect_ratio || manifest.aspectRatio;
+        renderConfig.targetDuration = timelineDuration;
+        fs.writeFileSync(renderConfigPath, JSON.stringify(renderConfig, null, 2), 'utf8');
+      } catch (_) {}
+    }
+
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     fs.writeFileSync(projectJsonPath, JSON.stringify(projectData, null, 2), 'utf8');
 

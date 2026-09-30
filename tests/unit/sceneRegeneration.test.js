@@ -187,6 +187,47 @@ console.log('✅ Test 1 Passed: ProductionPipeline.regenerateScene method is def
   assert.strictEqual(updatedManifest2.scenes[1].duration, 42, 'Scene 1 should scale proportionally to 42s');
   console.log('✅ Test 6 Passed: Proportional rescaling updates individual scene durations to exactly 60s');
 
+  // 7. Test Natural Language Aspect Ratio Change ("make vertical")
+  console.log('Testing natural language aspect ratio change (e.g. "make vertical")...');
+  
+  // Verify config.RESOLUTIONS is properly exported
+  assert(config.RESOLUTIONS && typeof config.RESOLUTIONS === 'object', 'config.RESOLUTIONS must be defined');
+  assert.deepStrictEqual(config.RESOLUTIONS['9:16'], { width: 1080, height: 1920 }, 'config.RESOLUTIONS must define 9:16');
+  assert.deepStrictEqual(config.RESOLUTIONS['16:9'], { width: 1920, height: 1080 }, 'config.RESOLUTIONS must define 16:9');
+
+  // Explicitly test manifest with only aspect_ratio (snake_case) to reproduce previous crash
+  const verticalTestManifest = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'scene-manifest.json'), 'utf8'));
+  verticalTestManifest.aspect_ratio = '16:9';
+  delete verticalTestManifest.aspectRatio; // ensure previous undefined aspectRatio bug is covered
+  fs.writeFileSync(path.join(testProjectDir, 'scene-manifest.json'), JSON.stringify(verticalTestManifest, null, 2), 'utf8');
+
+  // Write a mock render-config.json
+  fs.writeFileSync(path.join(testProjectDir, 'render-config.json'), JSON.stringify({
+    resolution: { width: 1920, height: 1080 },
+    aspectRatio: '16:9',
+    aspect_ratio: '16:9',
+    targetDuration: 60
+  }, null, 2), 'utf8');
+
+  const verticalRegenResult = await pipeline.executeNaturalLanguageRegeneration(testProjectId, 'make vertical');
+  assert(verticalRegenResult, 'Regeneration must succeed without TypeError on config.RESOLUTIONS');
+
+  const verticalManifest = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'scene-manifest.json'), 'utf8'));
+  assert.strictEqual(verticalManifest.aspect_ratio, '9:16', 'Manifest aspect_ratio must be updated to 9:16');
+  assert.strictEqual(verticalManifest.aspectRatio, '9:16', 'Manifest aspectRatio must be updated to 9:16');
+  assert.deepStrictEqual(verticalManifest.resolution, { width: 1080, height: 1920 }, 'Manifest resolution must be 1080x1920 for vertical 9:16');
+
+  // Check updated render-config.json
+  const updatedRenderConfig = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'render-config.json'), 'utf8'));
+  assert.deepStrictEqual(updatedRenderConfig.resolution, { width: 1080, height: 1920 }, 'render-config.json resolution must be updated to 1080x1920');
+  assert.strictEqual(updatedRenderConfig.aspect_ratio, '9:16', 'render-config.json aspect_ratio must be 9:16');
+
+  // Check project.json inputs
+  const updatedProjectJson = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'project.json'), 'utf8'));
+  assert.strictEqual(updatedProjectJson.inputs.aspectRatio, '9:16', 'project.json inputs aspectRatio must be 9:16');
+  assert.strictEqual(updatedProjectJson.inputs.aspect_ratio, '9:16', 'project.json inputs aspect_ratio must be 9:16');
+  console.log('✅ Test 7 Passed: Natural language "make vertical" correctly switches canvas layout and updates manifest without crashing');
+
   // Clean up test directory
   try {
     fs.rmSync(testProjectDir, { recursive: true, force: true });

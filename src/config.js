@@ -48,6 +48,7 @@ module.exports = {
   DEFAULT_SPECS: {
     resolution: { width: 1920, height: 1080 },
     aspectRatio: '16:9',
+    aspect_ratio: '16:9',
     fps: 30,
     videoCodec: 'libx264',
     audioCodec: 'aac',
@@ -56,6 +57,11 @@ module.exports = {
     defaultVoice: 'en-US-ChristopherNeural',
     defaultDuration: 60,
     defaultMode: 'launch'
+  },
+  RESOLUTIONS: {
+    '16:9': { width: 1920, height: 1080 },
+    '9:16': { width: 1080, height: 1920 },
+    '1:1': { width: 1080, height: 1080 }
   },
   VOICES: [
     { id: 'en-US-ChristopherNeural', name: 'Christopher (Male, Professional Tech & Founder)', lang: 'en-US', gender: 'Male' },

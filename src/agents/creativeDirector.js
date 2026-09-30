@@ -146,6 +146,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
       ai_provider: aiProviderName,
       duration: totalDuration,
       aspect_ratio: intent.aspect_ratio || '16:9',
+      aspectRatio: intent.aspect_ratio || '16:9',
       resolution: isVertical ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 },
       audience: intent.audience || 'general_technical',
       tone: intent.tone || 'premium',
