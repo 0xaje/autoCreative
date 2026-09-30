@@ -14,6 +14,31 @@ class ScreenRecorder {
   }
 
   /**
+   * Determine secure Chrome launch arguments with sandbox enabled by default.
+   * Only disables sandbox when explicitly configured or when running as root container.
+   */
+  getChromeLaunchArgs({ width = 1920, height = 1080, forceNoSandbox = false } = {}) {
+    const isRoot = typeof process.getuid === 'function' && process.getuid() === 0;
+    const shouldDisableSandbox = forceNoSandbox ||
+      this.options.noSandbox === true ||
+      process.env.CHROME_NO_SANDBOX === 'true' ||
+      isRoot;
+
+    const args = [
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      `--window-size=${width},${height}`,
+      '--hide-scrollbars'
+    ];
+
+    if (shouldDisableSandbox) {
+      args.push('--no-sandbox', '--disable-setuid-sandbox');
+    }
+
+    return { args, shouldDisableSandbox };
+  }
+
+  /**
    * Record real product footage for a given scene, saving MP4 video and PRD metadata JSON
    */
   async recordSceneFootage({ scene, targetUrl, durationSeconds, resolution, projectModel, projectDir, onProgress }) {
@@ -37,17 +62,25 @@ class ScreenRecorder {
     const startTime = new Date().toISOString();
 
     try {
-      browser = await puppeteer.launch({
-        executablePath: config.BINARIES.chrome,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-gpu',
-          `--window-size=${width},${height}`,
-          '--hide-scrollbars'
-        ],
-        headless: 'new'
-      });
+      const { args: launchArgs, shouldDisableSandbox } = this.getChromeLaunchArgs({ width, height });
+
+      try {
+        browser = await puppeteer.launch({
+          executablePath: config.BINARIES.chrome,
+          args: launchArgs,
+          headless: 'new'
+        });
+      } catch (launchErr) {
+        if (!shouldDisableSandbox && (launchErr.message.includes('sandbox') || launchErr.message.includes('setuid') || launchErr.message.includes('zygote'))) {
+          browser = await puppeteer.launch({
+            executablePath: config.BINARIES.chrome,
+            args: [...launchArgs, '--no-sandbox', '--disable-setuid-sandbox'],
+            headless: 'new'
+          });
+        } else {
+          throw launchErr;
+        }
+      }
 
       const page = await browser.newPage();
       await page.setViewport({ width, height, deviceScaleFactor: 1 });
@@ -107,7 +140,32 @@ class ScreenRecorder {
         if (!isRecording) return;
         try {
           if (ffmpegProc && ffmpegProc.stdin && ffmpegProc.stdin.writable) {
-            ffmpegProc.stdin.write(Buffer.from(data, 'base64'));
+            const canWrite = ffmpegProc.stdin.write(Buffer.from(data, 'base64'));
+            if (!canWrite) {
+              await new Promise((resolve) => {
+                const onDrain = () => {
+                  cleanup();
+                  resolve();
+                };
+                const onClose = () => {
+                  cleanup();
+                  resolve();
+                };
+                const timeoutId = setTimeout(() => {
+                  cleanup();
+                  resolve();
+                }, 2000);
+                function cleanup() {
+                  clearTimeout(timeoutId);
+                  if (ffmpegProc && ffmpegProc.stdin) {
+                    ffmpegProc.stdin.removeListener('drain', onDrain);
+                    ffmpegProc.stdin.removeListener('close', onClose);
+                  }
+                }
+                ffmpegProc.stdin.once('drain', onDrain);
+                ffmpegProc.stdin.once('close', onClose);
+              });
+            }
           }
           await client.send('Page.screencastFrameAck', { sessionId });
         } catch (e) {}

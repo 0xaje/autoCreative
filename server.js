@@ -5,11 +5,50 @@ const path = require('path');
 const fs = require('fs');
 const config = require('./src/config');
 const ProductionPipeline = require('./src/agents/pipeline');
-const { getSafeProjectPath, getSafeArtifactPath, isValidProjectId } = require('./src/utils/pathSanitizer');
+const {
+  getSafeProjectPath,
+  getSafeArtifactPath,
+  isValidProjectId,
+  validateLiveUrl,
+  validateGithubUrl,
+  validateLocalPath
+} = require('./src/utils/pathSanitizer');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+
+// WebSocket Origin validation (PRD Security)
+function isAllowedWebSocketOrigin(origin) {
+  if (!origin) return true; // CLI/tests without browser origin
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname.toLowerCase();
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    const isMatchingPort = !parsed.port || parsed.port === String(config.PORT);
+    if (isLocalhost && isMatchingPort) return true;
+
+    if (process.env.ALLOWED_ORIGINS) {
+      const allowed = process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim().toLowerCase());
+      if (allowed.includes(origin.toLowerCase())) return true;
+    }
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
+const wss = new WebSocket.Server({
+  server,
+  verifyClient: (info, callback) => {
+    const origin = info.origin || info.req.headers.origin;
+    if (isAllowedWebSocketOrigin(origin)) {
+      callback(true);
+    } else {
+      console.warn(`[Security] Rejected WebSocket connection from unauthorized origin: ${origin}`);
+      callback(false, 403, 'Forbidden: Invalid WebSocket origin');
+    }
+  }
+});
 
 wss.on('error', (err) => {
   if (err.code === 'EADDRINUSE') return; // Handled on server
@@ -18,7 +57,6 @@ wss.on('error', (err) => {
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'src', 'public')));
-app.use('/projects', express.static(config.PROJECTS_DIR));
 app.use('/demo-apps', express.static(config.DEMO_APPS_DIR));
 
 // Active pipeline instances keyed by projectId
@@ -73,7 +111,9 @@ app.get('/api/projects', (req, res) => {
         try {
           const data = JSON.parse(fs.readFileSync(pJson, 'utf8'));
           projects.push(data);
-        } catch (e) {}
+        } catch (e) {
+          console.warn(`[API] Failed to parse project metadata for ${dir}:`, e.message);
+        }
       }
     }
 
@@ -111,13 +151,52 @@ app.post('/api/projects', async (req, res) => {
       return res.status(400).json({ error: 'At least one of GitHub repository URL, Live URL, or local path is required.' });
     }
 
+    // SSRF and Arbitrary Path Validation
+    if (githubUrl) {
+      const gCheck = validateGithubUrl(githubUrl);
+      if (!gCheck.valid) {
+        return res.status(400).json({ error: gCheck.error });
+      }
+    }
+
+    if (liveUrl) {
+      const lCheck = validateLiveUrl(liveUrl, { allowInternal: Boolean(isDemo) });
+      if (!lCheck.valid) {
+        return res.status(400).json({ error: lCheck.error });
+      }
+    }
+
+    if (localPath) {
+      const pCheck = validateLocalPath(localPath);
+      if (!pCheck.valid) {
+        return res.status(400).json({ error: pCheck.error });
+      }
+    }
+
     const projectId = `proj_${Date.now()}`;
     const pipeline = new ProductionPipeline();
     activePipelines.set(projectId, pipeline);
 
-    pipeline.on('progress', (data) => broadcast('progress', data));
-    pipeline.on('complete', (data) => broadcast('complete', data));
-    pipeline.on('error', (data) => broadcast('error', data));
+    const onProgress = (data) => broadcast('progress', data);
+    const onComplete = (data) => {
+      broadcast('complete', data);
+      cleanup();
+    };
+    const onError = (data) => {
+      broadcast('error', data);
+      cleanup();
+    };
+
+    function cleanup() {
+      pipeline.removeListener('progress', onProgress);
+      pipeline.removeListener('complete', onComplete);
+      pipeline.removeListener('error', onError);
+      activePipelines.delete(projectId);
+    }
+
+    pipeline.on('progress', onProgress);
+    pipeline.on('complete', onComplete);
+    pipeline.on('error', onError);
 
     // Respond immediately with projectId while production runs asynchronously
     res.json({
@@ -168,7 +247,14 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
 
     const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
     activePipelines.set(projectId, pipeline);
-    pipeline.on('progress', (data) => broadcast('progress', data));
+
+    const onProgress = (data) => broadcast('progress', data);
+    pipeline.on('progress', onProgress);
+
+    const cleanup = () => {
+      pipeline.removeListener('progress', onProgress);
+      activePipelines.delete(projectId);
+    };
 
     res.json({ success: true, message: `Selective regeneration started for scene ${sceneIndex}` });
 
@@ -179,9 +265,11 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
       reRecord
     }).then(result => {
       broadcast('scene_regenerated', { projectId, sceneIndex, result });
+      cleanup();
     }).catch(err => {
       console.error(`Scene regeneration error on project ${projectId}:`, err);
       broadcast('error', { projectId, error: err.message });
+      cleanup();
     });
 
   } catch (err) {
@@ -212,8 +300,16 @@ app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
     const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
     activePipelines.set(projectId, pipeline);
 
-    pipeline.on('progress', (data) => broadcast('progress', data));
-    pipeline.on('error', (data) => broadcast('error', data));
+    const onProgress = (data) => broadcast('progress', data);
+    const onError = (data) => broadcast('error', data);
+    pipeline.on('progress', onProgress);
+    pipeline.on('error', onError);
+
+    const cleanup = () => {
+      pipeline.removeListener('progress', onProgress);
+      pipeline.removeListener('error', onError);
+      activePipelines.delete(projectId);
+    };
 
     res.json({
       success: true,
@@ -222,9 +318,11 @@ app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
 
     pipeline.executeNaturalLanguageRegeneration(projectId, userRequest).then(result => {
       broadcast('intent_regenerated', { projectId, userRequest, result });
+      cleanup();
     }).catch(err => {
       console.error(`Regeneration error on project ${projectId}:`, err);
       broadcast('error', { projectId, error: err.message });
+      cleanup();
     });
 
   } catch (err) {
@@ -342,19 +440,34 @@ app.post('/api/projects/:id/regenerate', async (req, res) => {
 
     const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
     activePipelines.set(projectId, pipeline);
-    pipeline.on('progress', (data) => broadcast('progress', data));
+
+    const onProgress = (data) => broadcast('progress', data);
+    pipeline.on('progress', onProgress);
+
+    const cleanup = () => {
+      pipeline.removeListener('progress', onProgress);
+      activePipelines.delete(projectId);
+    };
 
     if (sceneIndex !== undefined && sceneIndex !== null) {
       res.json({ success: true, message: `Selective regeneration started for scene ${sceneIndex}` });
       pipeline.regenerateScene(projectId, parseInt(sceneIndex, 10), { narrationText, reRecord }).then(result => {
         broadcast('scene_regenerated', { projectId, sceneIndex, result });
-      }).catch(err => broadcast('error', { projectId, error: err.message }));
+        cleanup();
+      }).catch(err => {
+        broadcast('error', { projectId, error: err.message });
+        cleanup();
+      });
     } else {
       const prompt = userRequest || 'Regenerate video with refined pacing and narrative.';
       res.json({ success: true, message: `Natural language regeneration started: "${prompt}"` });
       pipeline.executeNaturalLanguageRegeneration(projectId, prompt).then(result => {
         broadcast('intent_regenerated', { projectId, userRequest: prompt, result });
-      }).catch(err => broadcast('error', { projectId, error: err.message }));
+        cleanup();
+      }).catch(err => {
+        broadcast('error', { projectId, error: err.message });
+        cleanup();
+      });
     }
   } catch (err) {
     if (!res.headersSent) {
@@ -380,9 +493,43 @@ app.get('/api/projects/:id/video', (req, res) => {
   const range = req.headers.range;
 
   if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const match = String(range).match(/^bytes=(\d*)-(\d*)$/);
+    if (!match) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).send('Range Not Satisfiable');
+    }
+
+    let start = match[1] ? parseInt(match[1], 10) : null;
+    let end = match[2] ? parseInt(match[2], 10) : null;
+
+    if (start === null && end === null) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).send('Range Not Satisfiable');
+    }
+
+    if (start === null) {
+      // Suffix range: bytes=-N
+      const suffix = end;
+      if (suffix <= 0) {
+        res.setHeader('Content-Range', `bytes */${fileSize}`);
+        return res.status(416).send('Range Not Satisfiable');
+      }
+      start = Math.max(0, fileSize - suffix);
+      end = fileSize - 1;
+    } else if (end === null) {
+      // Open range: bytes=N-
+      end = fileSize - 1;
+    }
+
+    if (end >= fileSize) {
+      end = fileSize - 1;
+    }
+
+    if (start < 0 || start > end || start >= fileSize) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).send('Range Not Satisfiable');
+    }
+
     const chunksize = (end - start) + 1;
     const file = fs.createReadStream(videoPath, { start, end });
     const head = {
@@ -403,6 +550,8 @@ app.get('/api/projects/:id/video', (req, res) => {
   }
 });
 
+const HOST = process.env.HOST || '127.0.0.1';
+
 // Start listening with automatic port recovery
 let portRecoveryAttempted = false;
 server.on('error', (err) => {
@@ -414,7 +563,7 @@ server.on('error', (err) => {
         require('child_process').execSync(`fuser -k ${config.PORT}/tcp 2>/dev/null || true`);
       } catch (_) {}
       setTimeout(() => {
-        server.listen(config.PORT);
+        server.listen(config.PORT, HOST);
       }, 600);
       return;
     }
@@ -439,12 +588,12 @@ process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
 
 if (require.main === module) {
-  server.listen(config.PORT, () => {
+  server.listen(config.PORT, HOST, () => {
     console.log(`=======================================================`);
     console.log(`🎬 Autonomous Creative Production Studio`);
-    console.log(`🚀 Studio UI running at: http://localhost:${config.PORT}`);
+    console.log(`🚀 Studio UI running at: http://${HOST}:${config.PORT}`);
     console.log(`=======================================================`);
   });
 }
 
-module.exports = { app, server };
+module.exports = { app, server, isAllowedWebSocketOrigin };

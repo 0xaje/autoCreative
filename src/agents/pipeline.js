@@ -698,7 +698,9 @@ class ProductionPipeline extends EventEmitter {
         renderConfig.aspect_ratio = manifest.aspect_ratio || manifest.aspectRatio;
         renderConfig.targetDuration = timelineDuration;
         fs.writeFileSync(renderConfigPath, JSON.stringify(renderConfig, null, 2), 'utf8');
-      } catch (_) {}
+      } catch (err) {
+        console.warn(`[Pipeline] Failed to update render-config.json for project ${projectId}:`, err.message);
+      }
     }
 
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
@@ -732,7 +734,9 @@ class ProductionPipeline extends EventEmitter {
     if (fs.existsSync(modelPath)) {
       try {
         projectModel = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
-      } catch (_) {}
+      } catch (err) {
+        console.warn(`[Pipeline] Failed to parse project_model.json for project ${projectId}:`, err.message);
+      }
     } else if (projectData.projectModel) {
       projectModel = projectData.projectModel;
     }
@@ -807,7 +811,9 @@ class ProductionPipeline extends EventEmitter {
           try {
             const discovery = JSON.parse(fs.readFileSync(discoveryPath, 'utf8'));
             targetUrl = discovery.targetUrl;
-          } catch (_) {}
+          } catch (err) {
+            console.warn(`[Pipeline] Failed to parse discovery.json for project ${projectId}:`, err.message);
+          }
         }
         if (!targetUrl) {
           targetUrl = projectData.inputs?.liveUrl;

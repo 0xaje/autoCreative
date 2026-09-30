@@ -8,6 +8,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "noEmit": true,
     "paths": {
       "@creative-agent/schemas": ["./packages/schemas/src"],
       "@creative-agent/schemas/*": ["./packages/schemas/src/*"]
@@ -16,7 +18,10 @@
   "include": [
     "packages/**/*",
     "apps/**/*",
-    "tests/**/*"
+    "tests/**/*",
+    "src/**/*",
+    "server.js",
+    "cli.js"
   ],
   "exclude": [
     "node_modules",

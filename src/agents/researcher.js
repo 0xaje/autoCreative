@@ -10,6 +10,31 @@ class Researcher {
   }
 
   /**
+   * Determine secure Chrome launch arguments with sandbox enabled by default.
+   * Only disables sandbox when explicitly configured or when running as root container.
+   */
+  getChromeLaunchArgs({ width = 1920, height = 1080, forceNoSandbox = false } = {}) {
+    const isRoot = typeof process.getuid === 'function' && process.getuid() === 0;
+    const shouldDisableSandbox = forceNoSandbox ||
+      this.options.noSandbox === true ||
+      process.env.CHROME_NO_SANDBOX === 'true' ||
+      isRoot;
+
+    const args = [
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      `--window-size=${width},${height}`,
+      '--hide-scrollbars'
+    ];
+
+    if (shouldDisableSandbox) {
+      args.push('--no-sandbox', '--disable-setuid-sandbox');
+    }
+
+    return { args, shouldDisableSandbox };
+  }
+
+  /**
    * Main entry point: Performs Repository analysis and Product analysis,
    * synthesizing both into the internal Project Model (project_model.json).
    */
@@ -243,17 +268,25 @@ class Researcher {
     };
 
     try {
-      browser = await puppeteer.launch({
-        executablePath: config.BINARIES.chrome,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-gpu',
-          '--window-size=1920,1080',
-          '--hide-scrollbars'
-        ],
-        headless: 'new'
-      });
+      const { args: launchArgs, shouldDisableSandbox } = this.getChromeLaunchArgs({ width: 1920, height: 1080 });
+
+      try {
+        browser = await puppeteer.launch({
+          executablePath: config.BINARIES.chrome,
+          args: launchArgs,
+          headless: 'new'
+        });
+      } catch (launchErr) {
+        if (!shouldDisableSandbox && (launchErr.message.includes('sandbox') || launchErr.message.includes('setuid') || launchErr.message.includes('zygote'))) {
+          browser = await puppeteer.launch({
+            executablePath: config.BINARIES.chrome,
+            args: [...launchArgs, '--no-sandbox', '--disable-setuid-sandbox'],
+            headless: 'new'
+          });
+        } else {
+          throw launchErr;
+        }
+      }
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1920, height: 1080 });
@@ -492,6 +525,7 @@ class Researcher {
           await subPage.close();
         } catch (subErr) {
           // Non-blocking sub-page exploration
+          console.warn(`[Researcher] Sub-page exploration skipped for ${subRoute?.text || 'route'}:`, subErr.message);
         }
       }
     } catch (err) {

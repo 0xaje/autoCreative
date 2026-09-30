@@ -3,6 +3,36 @@ const path = require('path');
 const config = require('../config');
 const { runFFmpeg, ensureDir, getVideoMetadata } = require('../utils/ffmpegHelper');
 
+/**
+ * Safely escape all characters with special meaning in FFmpeg drawtext filter:
+ * backslash, single-quote, colon, percent, comma, semicolon, square brackets, and newlines.
+ */
+function escapeDrawtext(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, '')
+    .replace(/:/g, '\\:')
+    .replace(/%/g, '\\%')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/[\r\n]+/g, ' ');
+}
+
+/**
+ * Sanitize color inputs to valid hex or CSS color tokens, preventing filter graph syntax injection.
+ */
+function sanitizeColor(color, defaultColor) {
+  if (!color || typeof color !== 'string') return defaultColor;
+  const trimmed = color.trim();
+  if (/^(0x|#)?[0-9a-fA-F]{3,8}$|^[a-zA-Z]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  return defaultColor;
+}
+
 class VideoEditor {
   constructor(options = {}) {
     this.options = options;
@@ -151,12 +181,12 @@ class VideoEditor {
 
     // Add subtle lower third banner if specified in scene overlay
     if (scene.overlay && scene.overlay.lowerThird) {
-      const title = (scene.overlay.lowerThird.title || '').replace(/'/g, '').replace(/:/g, '\\:');
-      const subtitle = (scene.overlay.lowerThird.subtitle || '').replace(/'/g, '').replace(/:/g, '\\:');
-      const badge = (scene.overlay.badge || 'VERIFIED').replace(/'/g, '').replace(/:/g, '\\:');
+      const title = escapeDrawtext(scene.overlay.lowerThird.title || '');
+      const subtitle = escapeDrawtext(scene.overlay.lowerThird.subtitle || '');
+      const badge = escapeDrawtext(scene.overlay.badge || 'VERIFIED');
 
-      const accentColor = scene.overlay.color || '0x6366f1';
-      const badgeColor = scene.overlay.badgeHex || '0xa5b4fc';
+      const accentColor = sanitizeColor(scene.overlay.color, '0x6366f1');
+      const badgeColor = sanitizeColor(scene.overlay.badgeHex, '0xa5b4fc');
       const boxY = height - 160;
       filter += `,drawbox=x=60:y=${boxY}:w=540:h=90:color=black@0.65:t=fill`;
       filter += `,drawbox=x=60:y=${boxY}:w=6:h=90:color=${accentColor}@1.0:t=fill`;
@@ -182,3 +212,5 @@ class VideoEditor {
 }
 
 module.exports = VideoEditor;
+VideoEditor.escapeDrawtext = escapeDrawtext;
+VideoEditor.sanitizeColor = sanitizeColor;

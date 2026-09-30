@@ -149,7 +149,9 @@ class MotionDesigner {
       };
     } catch (err) {
       if (browser) await browser.close().catch(() => {});
-      if (fs.existsSync(tempSnapshotPath)) fs.unlinkSync(tempSnapshotPath).catch(() => {});
+      try {
+        if (fs.existsSync(tempSnapshotPath)) fs.unlinkSync(tempSnapshotPath);
+      } catch (_) {}
       throw err;
     }
   }

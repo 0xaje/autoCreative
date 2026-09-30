@@ -22,6 +22,7 @@ if (typeof document !== 'undefined') {
     let socket = null;
     let currentAspect = '16:9';
     let activeSubtitles = [];
+    let activeScenesList = [];
 
   // DOM Elements
   const form = document.getElementById('production-form');
@@ -498,7 +499,7 @@ if (typeof document !== 'undefined') {
     if (!projectId) return;
 
     try {
-      const res = await fetch(`/projects/${projectId}/evidence.json`);
+      const res = await fetch(`/api/projects/${projectId}/artifacts/evidence.json`);
       if (!res.ok) return;
       const data = await res.json();
 
@@ -530,7 +531,7 @@ if (typeof document !== 'undefined') {
     if (!projectId) return;
 
     try {
-      const res = await fetch(`/projects/${projectId}/project_model.json`);
+      const res = await fetch(`/api/projects/${projectId}/artifacts/project_model.json`);
       if (!res.ok) return;
       const data = await res.json();
 

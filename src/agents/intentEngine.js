@@ -44,7 +44,10 @@ class IntentEngine {
       durationSeconds = 30;
     }
 
-    // Clamp between 15s and 180s
+    // Clamp between 15s and 180s, guarding against NaN or non-finite values
+    if (!Number.isFinite(durationSeconds)) {
+      durationSeconds = 60;
+    }
     durationSeconds = Math.max(15, Math.min(180, durationSeconds));
 
     // 3. Aspect Ratio Parsing
@@ -123,10 +126,19 @@ class IntentEngine {
       customInstructions.push('more_technical');
     }
 
+    // Safely evaluate duration override
+    let finalDuration = durationSeconds;
+    if (overrides.duration !== undefined && overrides.duration !== null) {
+      const parsedOverride = parseInt(overrides.duration, 10);
+      if (Number.isFinite(parsedOverride)) {
+        finalDuration = Math.max(15, Math.min(180, parsedOverride));
+      }
+    }
+
     // Apply explicit user overrides from form/API
     const intent = {
       content_type: overrides.contentType || overrides.mode || contentType,
-      duration_seconds: overrides.duration ? parseInt(overrides.duration, 10) : durationSeconds,
+      duration_seconds: finalDuration,
       aspect_ratio: overrides.aspectRatio || aspectRatio,
       audience: overrides.audience || audience,
       tone: overrides.tone || tone,

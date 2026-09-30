@@ -14,15 +14,15 @@ class CreativeDirector {
   /**
    * Plan video story arc, scenes, script, and visual strategy conforming to the PRD Scene Manifest
    */
-  async planProduction({ userIntent, intent: directIntent, projectModel = {}, evidenceSummary, evidenceReport, projectDir, aiProvider }) {
+  async planProduction({ userIntent, intent: directIntent, projectModel = {}, evidenceSummary, evidenceReport, evidenceData: directEvidenceData, projectDir, aiProvider }) {
     if (projectDir) ensureDir(projectDir);
 
     const intent = directIntent || userIntent || {};
-    const evidenceData = evidenceReport || evidenceSummary || {};
+    const evidenceData = directEvidenceData || evidenceReport || evidenceSummary || {};
     const totalDuration = intent.duration_seconds || 60;
     const isVertical = intent.aspect_ratio === '9:16';
     const contentType = intent.content_type || 'product_demo';
-    const sourceMode = projectModel.sourceMode || 'LIVE_URL';
+    const sourceMode = projectModel.sourceMode || (arguments[0] && arguments[0].sourceMode) || 'LIVE_URL';
 
     const provider = aiProvider || this.aiProvider || getAIProvider();
     const isAIAvailable = typeof provider.isAvailable === 'function' ? provider.isAvailable() : Boolean(provider.apiKey);
@@ -35,19 +35,33 @@ class CreativeDirector {
     const problem = projectModel.problem || 'Complex workflows require automated, dependable tools.';
     const features = (projectModel.features || []).slice(0, 4);
 
-    // Retrieve strictly verified claims
+    // Retrieve strictly verified claims and qualified partial claims
     const verifiedClaims = (evidenceData?.claims || [])
       .filter(c => c.state === 'VERIFIED')
+      .map(c => c.claim);
+
+    const partialClaims = (evidenceData?.claims || [])
+      .filter(c => c.state === 'PARTIAL')
       .map(c => c.claim);
 
     const featureCards = projectModel.featureCards || [];
     const keyMetrics = projectModel.keyMetrics || [];
     const visualAssets = projectModel.visualAssets || {};
 
-    const f1 = verifiedClaims[0] || featureCards[0]?.title || features[0] || (projectModel.integrations?.[0] ? `${projectModel.integrations[0]} integration` : 'Modular architecture');
-    const f2 = verifiedClaims[1] || featureCards[1]?.title || features[1] || (projectModel.integrations?.[1] ? `${projectModel.integrations[1]} integration` : 'Automated processing engine');
-    const f3 = verifiedClaims[2] || featureCards[2]?.title || features[2] || 'Reliable operational design';
+    // Fallbacks must NEVER be falsely marked as VERIFIED (PRD Evidence Rule)
+    const f1Claim = verifiedClaims[0] || (partialClaims[0] ? `Partial: ${partialClaims[0]}` : null);
+    const f1 = f1Claim || featureCards[0]?.title || features[0] || (projectModel.integrations?.[0] ? `${projectModel.integrations[0]} integration` : 'Modular architecture');
+    const f1State = verifiedClaims[0] ? 'VERIFIED' : (partialClaims[0] ? 'PARTIAL' : 'UNVERIFIED');
 
+    const f2Claim = verifiedClaims[1] || (partialClaims[1] ? `Partial: ${partialClaims[1]}` : null);
+    const f2 = f2Claim || featureCards[1]?.title || features[1] || (projectModel.integrations?.[1] ? `${projectModel.integrations[1]} integration` : 'Automated processing engine');
+    const f2State = verifiedClaims[1] ? 'VERIFIED' : (partialClaims[1] ? 'PARTIAL' : 'UNVERIFIED');
+
+    const f3Claim = verifiedClaims[2] || (partialClaims[2] ? `Partial: ${partialClaims[2]}` : null);
+    const f3 = f3Claim || featureCards[2]?.title || features[2] || 'Reliable operational design';
+    const f3State = verifiedClaims[2] ? 'VERIFIED' : (partialClaims[2] ? 'PARTIAL' : 'UNVERIFIED');
+
+    const claimStates = { f1State, f2State, f3State };
     const brandTheme = getProjectBrandTheme(projectModel);
 
     const scenes = this.buildSceneList({
@@ -60,6 +74,7 @@ class CreativeDirector {
       f1,
       f2,
       f3,
+      claimStates,
       featureCards,
       keyMetrics,
       visualAssets,
@@ -192,6 +207,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
     f1,
     f2,
     f3,
+    claimStates = {},
     featureCards = [],
     keyMetrics = [],
     visualAssets = {},
@@ -202,6 +218,9 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
     isVertical,
     brandTheme
   }) {
+    const f1State = claimStates.f1State || 'UNVERIFIED';
+    const f2State = claimStates.f2State || 'UNVERIFIED';
+    const f3State = claimStates.f3State || 'UNVERIFIED';
     const theme = brandTheme || getProjectBrandTheme({ project: productName });
     const isRepoOnly = sourceMode === 'REPOSITORY_ANALYSIS_ONLY';
     const isDemo = sourceMode === 'DEMO';
@@ -254,12 +273,14 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
             id: 'code_overview',
             duration: midDur,
             type: 'code_walkthrough',
-            purpose: 'Demonstrate verified codebase structure and tech stack',
-            voiceover: `Examining the codebase, ${f1} provides robust execution with verified dependencies.`,
+            purpose: 'Demonstrate codebase structure and tech stack',
+            voiceover: f1State === 'VERIFIED'
+              ? `Examining the codebase, ${f1} provides robust execution with verified dependencies.`
+              : `Examining the codebase, ${f1} provides structured execution across core modules.`,
             visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
-            evidenceState: 'VERIFIED',
-            title: 'Verified Codebase Structure',
-            overlay: makeOverlay('Codebase Architecture', f1, 'VERIFIED CODE'),
+            evidenceState: f1State,
+            title: f1State === 'VERIFIED' ? 'Verified Codebase Structure' : 'Codebase Structure',
+            overlay: makeOverlay('Codebase Architecture', f1, f1State === 'VERIFIED' ? 'VERIFIED CODE' : 'CODE STRUCTURE'),
             theme
           },
           {
@@ -364,23 +385,27 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
             duration: d3,
             type: 'code_stack',
             purpose: 'Demonstrate code structure and technical dependencies',
-            voiceover: `Examining the codebase in detail, the core processing engine leverages ${f1} to deliver lightning-fast execution and predictable throughput. Each module adheres strictly to clean code conventions and type-safe interfaces, ensuring developer confidence across every release.`,
+            voiceover: f1State === 'VERIFIED'
+              ? `Examining the codebase in detail, the core processing engine leverages ${f1} to deliver lightning-fast execution and predictable throughput. Each module adheres strictly to clean code conventions and type-safe interfaces, ensuring developer confidence across every release.`
+              : `Examining the codebase in detail, the architecture incorporates ${f1} to maintain modular execution and clean separation of concerns across service boundaries.`,
             visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
-            evidenceState: 'VERIFIED',
-            title: 'Code Structure & Stack',
-            overlay: makeOverlay('Codebase Stack', f1, 'VERIFIED CODE'),
+            evidenceState: f1State,
+            title: f1State === 'VERIFIED' ? 'Verified Code Stack' : 'Code Structure & Stack',
+            overlay: makeOverlay('Codebase Stack', f1, f1State === 'VERIFIED' ? 'VERIFIED CODE' : 'CODE STRUCTURE'),
             theme
           },
           {
             id: 'feature_2',
             duration: d4,
             type: 'capabilities',
-            purpose: 'Highlight verified repository capabilities',
-            voiceover: `Within the internal package structure, ${f2} manages end-to-end operational orchestration. Automated test suites and continuous verification harnesses validate every single state transition, ensuring zero runtime degradation under production traffic.`,
+            purpose: 'Highlight repository capabilities',
+            voiceover: f2State === 'VERIFIED'
+              ? `Within the internal package structure, ${f2} manages end-to-end operational orchestration. Automated test suites and continuous verification harnesses validate every single state transition, ensuring zero runtime degradation under production traffic.`
+              : `Within the internal package structure, ${f2} coordinates operational workflows with clean state transitions.`,
             visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
-            evidenceState: 'VERIFIED',
-            title: 'Verified Capabilities',
-            overlay: makeOverlay('Capability Engine', f2, 'VERIFIED REPO'),
+            evidenceState: f2State,
+            title: f2State === 'VERIFIED' ? 'Verified Capabilities' : 'System Capabilities',
+            overlay: makeOverlay('Capability Engine', f2, f2State === 'VERIFIED' ? 'VERIFIED REPO' : 'SYSTEM ENGINE'),
             theme
           },
           {
@@ -388,11 +413,13 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
             duration: d5,
             type: 'code_walkthrough',
             purpose: 'Deep dive technical implementation and reliability guarantees',
-            voiceover: `Looking deeper into the system internals, ${f3} provides rigorous fault tolerance and self-healing safeguards. If an external service latency spikes or an unexpected exception occurs, deterministic recovery mechanisms ensure safe degradation without loss of state.`,
+            voiceover: f3State === 'VERIFIED'
+              ? `Looking deeper into the system internals, ${f3} provides rigorous fault tolerance and self-healing safeguards. If an external service latency spikes or an unexpected exception occurs, deterministic recovery mechanisms ensure safe degradation without loss of state.`
+              : `Looking deeper into the system internals, ${f3} provides structural resilience with deterministic recovery safeguards across execution paths.`,
             visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
-            evidenceState: 'VERIFIED',
-            title: 'Fault Tolerance & Reliability',
-            overlay: makeOverlay('System Resilience', f3, 'VERIFIED FAULT TOLERANCE'),
+            evidenceState: f3State,
+            title: f3State === 'VERIFIED' ? 'Fault Tolerance & Reliability' : 'System Reliability',
+            overlay: makeOverlay('System Resilience', f3, f3State === 'VERIFIED' ? 'VERIFIED RESILIENCE' : 'RESILIENCE'),
             theme
           },
           {
@@ -553,21 +580,21 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
             purpose: 'Demonstrate code structure and technical dependencies',
             voiceover: `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability across all core service modules. Dependencies are isolated and rigorously typed.`,
             visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
-            evidenceState: 'VERIFIED',
-            title: 'Code Structure & Stack',
-            overlay: makeOverlay('Codebase Stack', f1, 'VERIFIED CODE'),
+            evidenceState: f1State,
+            title: f1State === 'VERIFIED' ? 'Verified Code Stack' : 'Code Structure & Stack',
+            overlay: makeOverlay('Codebase Stack', f1, f1State === 'VERIFIED' ? 'VERIFIED CODE' : 'CODE STRUCTURE'),
             theme
           },
           {
             id: 'feature_2',
             duration: d4,
             type: 'capabilities',
-            purpose: 'Highlight verified repository capabilities',
-            voiceover: `Within the repository structure, ${f2} is thoroughly documented and configured for dependable continuous operation in production environments with verified regression coverage.`,
+            purpose: 'Highlight repository capabilities',
+            voiceover: `Within the repository structure, ${f2} is thoroughly documented and configured for dependable continuous operation in production environments.`,
             visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
-            evidenceState: 'VERIFIED',
-            title: 'Verified Capabilities',
-            overlay: makeOverlay('Capability Engine', f2, 'VERIFIED REPO'),
+            evidenceState: f2State,
+            title: f2State === 'VERIFIED' ? 'Verified Capabilities' : 'System Capabilities',
+            overlay: makeOverlay('Capability Engine', f2, f2State === 'VERIFIED' ? 'VERIFIED REPO' : 'SYSTEM ENGINE'),
             theme
           },
           {
@@ -720,23 +747,23 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
             ? `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability across all core service modules.`
             : `Examining the codebase, the project leverages ${f1} to ensure high performance and maintainability.`,
           visuals: [{ source: 'motion_graphic', motionType: 'code_walkthrough' }],
-          evidenceState: 'VERIFIED',
-          title: 'Code Structure & Stack',
-          overlay: makeOverlay('Codebase Stack', f1, 'VERIFIED CODE'),
+          evidenceState: f1State,
+          title: f1State === 'VERIFIED' ? 'Verified Code Stack' : 'Code Structure & Stack',
+          overlay: makeOverlay('Codebase Stack', f1, f1State === 'VERIFIED' ? 'VERIFIED CODE' : 'CODE STRUCTURE'),
           theme
         },
         {
           id: 'feature_2',
           duration: d4,
           type: 'capabilities',
-          purpose: 'Highlight verified repository capabilities',
+          purpose: 'Highlight repository capabilities',
           voiceover: isLong
             ? `Within the repository structure, ${f2} is thoroughly documented and configured for dependable continuous operation in production environments.`
             : `Within the repository structure, ${f2} is thoroughly documented and configured for dependable operation.`,
           visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
-          evidenceState: 'VERIFIED',
-          title: 'Verified Capabilities',
-          overlay: makeOverlay('Capability Engine', f2, 'VERIFIED REPO'),
+          evidenceState: f2State,
+          title: f2State === 'VERIFIED' ? 'Verified Capabilities' : 'System Capabilities',
+          overlay: makeOverlay('Capability Engine', f2, f2State === 'VERIFIED' ? 'VERIFIED REPO' : 'SYSTEM ENGINE'),
           theme
         },
         {
