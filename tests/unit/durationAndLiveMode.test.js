@@ -10,8 +10,8 @@ console.log('🧪 Running Unit Test: Video Duration & Live Application Mode Prec
 const director = new CreativeDirector();
 
 async function runTests() {
-  // Test 1: Verify exact timeline duration allocation across various durations (60s, 75s, 90s, 120s)
-  const testDurations = [30, 45, 60, 75, 90, 120];
+  // Test 1: Verify exact timeline duration allocation across various durations (30s, 45s, 60s, 75s, 90s, 120s, 150s, 180s)
+  const testDurations = [30, 45, 60, 75, 90, 120, 150, 180];
 
   for (const dur of testDurations) {
     const scenes = director.buildSceneList({
@@ -40,9 +40,12 @@ async function runTests() {
       if (scene.overlay && scene.overlay.badge) {
         assert(!scene.overlay.badge.includes('DEMO'), `Scene ${scene.id} badge must not contain DEMO on LIVE_URL: got ${scene.overlay.badge}`);
       }
+      if (scene.overlay) {
+        assert(scene.overlay.color, `Scene ${scene.id} must have brand color`);
+      }
     }
   }
-  console.log('✅ Test 1 Passed: Scene durations sum strictly to targetDuration for 30s, 45s, 60s, 75s, 90s, 120s');
+  console.log('✅ Test 1 Passed: Scene durations sum strictly to targetDuration for 30s through 180s (3 min)');
 
   // Test 2: Verify project title formatting for LIVE_URL does not use "PRODUCT DEMO"
   const manifest60 = await director.planProduction({

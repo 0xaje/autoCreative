@@ -444,6 +444,39 @@ textarea.input-box {
   color: var(--accent-primary);
 }
 
+.duration-presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.duration-chip {
+  flex: 1;
+  background: var(--studio-surface-elevated);
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--studio-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.duration-chip:hover {
+  background: var(--studio-surface-hover);
+  color: var(--studio-text-primary);
+  border-color: var(--studio-border-hover);
+}
+
+.duration-chip.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

@@ -128,9 +128,15 @@
           <div class="form-section duration-slider-container">
             <div class="form-label">
               <span>Target Duration</span>
-              <span class="slider-val-readout" id="duration-val">60s</span>
+              <span class="slider-val-readout" id="duration-val">60s (1m)</span>
             </div>
-            <input type="range" id="input-duration" min="30" max="120" step="15" value="60" aria-label="Target Duration in seconds">
+            <input type="range" id="input-duration" min="30" max="180" step="15" value="60" aria-label="Target Duration in seconds">
+            <div class="duration-presets" role="group" aria-label="Quick Duration Presets">
+              <button type="button" class="duration-chip active" data-duration="60">1 Min</button>
+              <button type="button" class="duration-chip" data-duration="90">1.5 Min</button>
+              <button type="button" class="duration-chip" data-duration="120">2 Min</button>
+              <button type="button" class="duration-chip" data-duration="180">3 Min</button>
+            </div>
           </div>
 
           <div class="form-section">

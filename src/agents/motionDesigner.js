@@ -3,6 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer-core');
 const config = require('../config');
 const { ensureDir, getVideoMetadata, runFFmpeg } = require('../utils/ffmpegHelper');
+const { getProjectBrandTheme } = require('../utils/brandDesigner');
 
 class MotionDesigner {
   constructor(options = {}) {
@@ -100,11 +101,12 @@ class MotionDesigner {
   }
 
   /**
-   * Procedural HTML/CSS template generator for motion graphics
+   * Procedural HTML/CSS template generator for motion graphics with dynamic Brand Design Identity
    */
-  generateMotionHtml({ motionType, scene, sourceAnalysis, width, height }) {
-    const productName = sourceAnalysis.name || 'Autonomous Studio';
-    const tagline = sourceAnalysis.tagline || 'Next-Gen Creative Production';
+  generateMotionHtml({ motionType, scene, sourceAnalysis = {}, width, height }) {
+    const productName = sourceAnalysis.project || sourceAnalysis.name || scene?.title || 'Autonomous Studio';
+    const tagline = sourceAnalysis.purpose || sourceAnalysis.tagline || 'Next-Gen Creative Production';
+    const theme = scene?.theme || getProjectBrandTheme(sourceAnalysis);
 
     const techStack = sourceAnalysis.integrations || sourceAnalysis.githubData?.detectedTech || [];
     const features = sourceAnalysis.features || [];
@@ -113,11 +115,11 @@ class MotionDesigner {
 
     if (motionType === 'code_walkthrough') {
       const techBadges = techStack.slice(0, 6).map(t =>
-        `<span style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(129, 140, 248, 0.4); padding: 8px 18px; border-radius: 8px; font-size: 16px; font-weight: 600; color: #c7d2fe;">${t}</span>`
+        `<span style="background: ${theme.badgeBg}; border: 1px solid ${theme.borderColor}; padding: 8px 18px; border-radius: 8px; font-size: 16px; font-weight: 600; color: ${theme.accentBadge};">${t}</span>`
       ).join('');
 
       const treeItems = sourceTree.slice(0, 8).map(f =>
-        `<div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 16px; color: #94a3b8; padding: 4px 0;"><span style="color: #6366f1;">📄</span> ${f}</div>`
+        `<div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 16px; color: #94a3b8; padding: 4px 0;"><span style="color: ${theme.primary};">📄</span> ${f}</div>`
       ).join('');
 
       return `
@@ -130,7 +132,7 @@ class MotionDesigner {
             body {
               width: ${width}px;
               height: ${height}px;
-              background: #090d16;
+              background: ${theme.bgDark};
               color: #ffffff;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               display: flex;
@@ -138,8 +140,26 @@ class MotionDesigner {
               justify-content: center;
               padding: 60px;
               overflow: hidden;
+              position: relative;
+            }
+            .grid-bg {
+              position: absolute;
+              inset: 0;
+              background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+              background-size: 50px 50px;
+            }
+            .glow-spot {
+              position: absolute;
+              width: 600px;
+              height: 600px;
+              border-radius: 50%;
+              background: ${theme.glow};
+              filter: blur(80px);
             }
             .container {
+              position: relative;
+              z-index: 10;
               display: flex;
               gap: 40px;
               width: 100%;
@@ -153,19 +173,20 @@ class MotionDesigner {
             }
             .right-col {
               flex: 0.8;
-              background: rgba(15, 23, 42, 0.8);
-              border: 1px solid rgba(255, 255, 255, 0.12);
+              background: ${theme.cardBg};
+              border: 1px solid ${theme.borderColor};
               border-radius: 20px;
               padding: 32px;
               box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+              backdrop-filter: blur(20px);
             }
             .badge {
               display: inline-block;
               padding: 8px 20px;
-              background: rgba(99, 102, 241, 0.2);
-              border: 1px solid rgba(129, 140, 248, 0.4);
+              background: ${theme.badgeBg};
+              border: 1px solid ${theme.borderColor};
               border-radius: 9999px;
-              color: #a5b4fc;
+              color: ${theme.accentBadge};
               font-size: 15px;
               font-weight: 700;
               letter-spacing: 2px;
@@ -178,7 +199,7 @@ class MotionDesigner {
               letter-spacing: -1px;
               line-height: 1.15;
               margin-bottom: 20px;
-              background: linear-gradient(135deg, #ffffff, #c7d2fe);
+              background: linear-gradient(135deg, #ffffff, ${theme.primaryLight});
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
             }
@@ -196,6 +217,8 @@ class MotionDesigner {
           </style>
         </head>
         <body>
+          <div class="grid-bg"></div>
+          <div class="glow-spot"></div>
           <div class="container">
             <div class="left-col">
               <div class="badge">REPOSITORY ARCHITECTURE</div>
@@ -206,7 +229,7 @@ class MotionDesigner {
               </div>
             </div>
             <div class="right-col">
-              <div style="font-size: 14px; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Verified Repository Structure</div>
+              <div style="font-size: 14px; font-weight: 700; color: ${theme.accentBadge}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Verified Repository Structure</div>
               <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.06);">
                 ${treeItems}
               </div>
@@ -219,11 +242,11 @@ class MotionDesigner {
 
     if (motionType === 'feature_card_flow') {
       const featPills = features.slice(0, 4).map(f =>
-        `<div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px;">
-          <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(99, 102, 241, 0.2); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #a5b4fc;">✓</div>
+        `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px; backdrop-filter: blur(15px);">
+          <div style="width: 44px; height: 44px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${theme.primary}; font-weight: bold;">✓</div>
           <div>
             <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${f}</div>
-            <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository documentation</div>
+            <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository intelligence</div>
           </div>
         </div>`
       ).join('');
@@ -238,7 +261,7 @@ class MotionDesigner {
             body {
               width: ${width}px;
               height: ${height}px;
-              background: #090d16;
+              background: ${theme.bgDark};
               color: #ffffff;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               display: flex;
@@ -247,18 +270,28 @@ class MotionDesigner {
               justify-content: center;
               padding: 60px;
               overflow: hidden;
+              position: relative;
+            }
+            .grid-bg {
+              position: absolute;
+              inset: 0;
+              background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+              background-size: 50px 50px;
             }
             .header {
               text-align: center;
               margin-bottom: 40px;
+              position: relative;
+              z-index: 10;
             }
             .badge {
               display: inline-block;
               padding: 8px 20px;
-              background: rgba(16, 185, 129, 0.2);
-              border: 1px solid rgba(52, 211, 153, 0.4);
+              background: ${theme.badgeBg};
+              border: 1px solid ${theme.borderColor};
               border-radius: 9999px;
-              color: #6ee7b7;
+              color: ${theme.accentBadge};
               font-size: 14px;
               font-weight: 700;
               letter-spacing: 2px;
@@ -268,7 +301,7 @@ class MotionDesigner {
             h2 {
               font-size: 48px;
               font-weight: 900;
-              background: linear-gradient(135deg, #ffffff, #cbd5e1);
+              background: linear-gradient(135deg, #ffffff, ${theme.primaryLight});
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
             }
@@ -278,10 +311,13 @@ class MotionDesigner {
               gap: 24px;
               width: 100%;
               max-width: 1100px;
+              position: relative;
+              z-index: 10;
             }
           </style>
         </head>
         <body>
+          <div class="grid-bg"></div>
           <div class="header">
             <div class="badge">VERIFIED CAPABILITIES</div>
             <h2>${featureName}</h2>
@@ -305,7 +341,7 @@ class MotionDesigner {
             body {
               width: ${width}px;
               height: ${height}px;
-              background: radial-gradient(circle at 50% 40%, #1e1b4b 0%, #030712 100%);
+              background: ${theme.bgGradient};
               color: #ffffff;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
               display: flex;
@@ -327,19 +363,19 @@ class MotionDesigner {
               width: 700px;
               height: 700px;
               border-radius: 50%;
-              background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%);
-              filter: blur(50px);
+              background: ${theme.glow};
+              filter: blur(60px);
             }
             .card {
               position: relative;
               z-index: 10;
               text-align: center;
               padding: 56px 80px;
-              background: rgba(15, 23, 42, 0.75);
+              background: ${theme.cardBg};
               backdrop-filter: blur(25px);
-              border: 1px solid rgba(255, 255, 255, 0.15);
+              border: 1px solid ${theme.borderColor};
               border-radius: 28px;
-              box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.8), 0 0 50px rgba(99, 102, 241, 0.3);
+              box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.8), 0 0 50px ${theme.glow};
               max-width: 960px;
             }
             .badge {
@@ -347,10 +383,10 @@ class MotionDesigner {
               align-items: center;
               gap: 8px;
               padding: 8px 24px;
-              background: rgba(99, 102, 241, 0.2);
-              border: 1px solid rgba(129, 140, 248, 0.45);
+              background: ${theme.badgeBg};
+              border: 1px solid ${theme.borderColor};
               border-radius: 9999px;
-              color: #c7d2fe;
+              color: ${theme.accentBadge};
               font-size: 16px;
               font-weight: 700;
               letter-spacing: 2px;
@@ -362,7 +398,7 @@ class MotionDesigner {
               font-weight: 900;
               margin-bottom: 16px;
               letter-spacing: -1px;
-              background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+              background: linear-gradient(135deg, #ffffff 40%, ${theme.primaryLight} 100%);
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
             }
@@ -380,12 +416,12 @@ class MotionDesigner {
             }
             .btn-primary {
               padding: 18px 40px;
-              background: linear-gradient(135deg, #6366f1, #4f46e5);
+              background: linear-gradient(135deg, ${theme.primary}, ${theme.primaryDark});
               border-radius: 14px;
               color: white;
               font-size: 22px;
               font-weight: 700;
-              box-shadow: 0 10px 30px -5px rgba(79, 70, 229, 0.6);
+              box-shadow: 0 10px 30px -5px ${theme.glow};
             }
             .btn-secondary {
               padding: 18px 36px;
@@ -402,7 +438,7 @@ class MotionDesigner {
           <div class="grid-bg"></div>
           <div class="glow-orb"></div>
           <div class="card">
-            <div class="badge">OFFICIAL RELEASE</div>
+            <div class="badge">OFFICIAL PRESENTATION</div>
             <h1>${productName}</h1>
             <p>${tagline}</p>
             <div class="actions">
@@ -426,7 +462,7 @@ class MotionDesigner {
             body {
               width: ${width}px;
               height: ${height}px;
-              background: #090d16;
+              background: ${theme.bgDark};
               color: #ffffff;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               display: flex;
@@ -435,16 +471,26 @@ class MotionDesigner {
               justify-content: center;
               padding: 60px;
               overflow: hidden;
+              position: relative;
+            }
+            .grid-bg {
+              position: absolute;
+              inset: 0;
+              background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+              background-size: 50px 50px;
             }
             .header {
               text-align: center;
               margin-bottom: 48px;
+              position: relative;
+              z-index: 10;
             }
             .header h2 {
               font-size: 48px;
               font-weight: 800;
               margin-bottom: 12px;
-              background: linear-gradient(135deg, #ffffff, #cbd5e1);
+              background: linear-gradient(135deg, #ffffff, ${theme.primaryLight});
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
             }
@@ -453,6 +499,8 @@ class MotionDesigner {
               gap: 40px;
               width: 100%;
               max-width: 1300px;
+              position: relative;
+              z-index: 10;
             }
             .column {
               flex: 1;
@@ -461,13 +509,13 @@ class MotionDesigner {
               backdrop-filter: blur(20px);
             }
             .problem {
-              background: rgba(239, 68, 68, 0.06);
-              border: 1px solid rgba(239, 68, 68, 0.25);
+              background: rgba(239, 68, 68, 0.08);
+              border: 1px solid rgba(239, 68, 68, 0.28);
             }
             .solution {
-              background: rgba(16, 185, 129, 0.08);
-              border: 1px solid rgba(16, 185, 129, 0.35);
-              box-shadow: 0 0 40px rgba(16, 185, 129, 0.18);
+              background: ${theme.cardBg};
+              border: 1px solid ${theme.borderColor};
+              box-shadow: 0 0 40px ${theme.glow};
             }
             .tag {
               display: inline-block;
@@ -480,12 +528,13 @@ class MotionDesigner {
               margin-bottom: 22px;
             }
             .problem .tag { background: rgba(239, 68, 68, 0.25); color: #f87171; }
-            .solution .tag { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+            .solution .tag { background: ${theme.badgeBg}; color: ${theme.primaryLight}; }
             .column h3 { font-size: 30px; margin-bottom: 16px; font-weight: 800; }
             .column p { font-size: 20px; color: #94a3b8; line-height: 1.6; }
           </style>
         </head>
         <body>
+          <div class="grid-bg"></div>
           <div class="header">
             <h2>Architectural Reimagination</h2>
           </div>
@@ -506,7 +555,283 @@ class MotionDesigner {
       `;
     }
 
-    // Default: Cinematic Intro Title Card
+    // Default: Dynamic Cinematic Intro Card formatted to the project's visual archetype
+    if (theme.archetype === 'tech_hud') {
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              width: ${width}px;
+              height: ${height}px;
+              background: ${theme.bgDark};
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+              position: relative;
+            }
+            .grid-pattern {
+              position: absolute;
+              inset: 0;
+              background-size: 40px 40px;
+              background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            }
+            .hud-bracket-tl { position: absolute; top: 40px; left: 40px; font-family: monospace; font-size: 20px; color: ${theme.primary}; }
+            .hud-bracket-tr { position: absolute; top: 40px; right: 40px; font-family: monospace; font-size: 20px; color: ${theme.primary}; }
+            .hud-bracket-bl { position: absolute; bottom: 40px; left: 40px; font-family: monospace; font-size: 20px; color: ${theme.primary}; }
+            .hud-bracket-br { position: absolute; bottom: 40px; right: 40px; font-family: monospace; font-size: 20px; color: ${theme.primary}; }
+            .telemetry-bar {
+              position: absolute;
+              top: 48px;
+              font-family: monospace;
+              font-size: 14px;
+              color: ${theme.primaryLight};
+              letter-spacing: 2px;
+              text-transform: uppercase;
+            }
+            .hero-card {
+              position: relative;
+              z-index: 10;
+              text-align: center;
+              padding: 60px 80px;
+              background: ${theme.cardBg};
+              border: 1px solid ${theme.borderColor};
+              border-radius: 16px;
+              box-shadow: 0 0 60px ${theme.glow};
+              backdrop-filter: blur(20px);
+            }
+            .badge {
+              display: inline-block;
+              padding: 8px 24px;
+              background: ${theme.badgeBg};
+              border: 1px solid ${theme.borderColor};
+              border-radius: 4px;
+              color: ${theme.accentBadge};
+              font-family: monospace;
+              font-size: 15px;
+              font-weight: 700;
+              letter-spacing: 3px;
+              text-transform: uppercase;
+              margin-bottom: 24px;
+            }
+            h1 {
+              font-size: 80px;
+              font-weight: 900;
+              letter-spacing: -2px;
+              line-height: 1.1;
+              margin-bottom: 20px;
+              background: linear-gradient(135deg, #ffffff 40%, ${theme.primaryLight} 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            p {
+              font-size: 26px;
+              color: #94a3b8;
+              max-width: 900px;
+              margin: 0 auto;
+              line-height: 1.5;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="grid-pattern"></div>
+          <div class="hud-bracket-tl">┌─ [SYS.ONLINE]</div>
+          <div class="hud-bracket-tr">[CORE.READY] ─┐</div>
+          <div class="hud-bracket-bl">└─ [TEL.VERIFIED]</div>
+          <div class="hud-bracket-br">[BROADCAST.MP4] ─┘</div>
+          <div class="telemetry-bar">PLATFORM INTELLIGENCE // ${theme.name.toUpperCase()} // REGION: GLOBAL</div>
+          <div class="hero-card">
+            <div class="badge">SYS // VERIFIED LAUNCH</div>
+            <h1>${productName}</h1>
+            <p>${tagline}</p>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    if (theme.archetype === 'glassmorphic_deck') {
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              width: ${width}px;
+              height: ${height}px;
+              background: ${theme.bgGradient};
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+              position: relative;
+            }
+            .orb-1 {
+              position: absolute;
+              width: 650px;
+              height: 650px;
+              top: -100px;
+              left: -100px;
+              border-radius: 50%;
+              background: ${theme.glow};
+              filter: blur(80px);
+            }
+            .orb-2 {
+              position: absolute;
+              width: 500px;
+              height: 500px;
+              bottom: -50px;
+              right: -50px;
+              border-radius: 50%;
+              background: ${theme.glow};
+              filter: blur(90px);
+            }
+            .glass-deck {
+              position: relative;
+              z-index: 10;
+              text-align: center;
+              padding: 70px 90px;
+              background: ${theme.cardBg};
+              border: 1px solid ${theme.borderColor};
+              border-radius: 32px;
+              backdrop-filter: blur(30px);
+              box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 40px ${theme.glow};
+              max-width: 1000px;
+            }
+            .badge {
+              display: inline-block;
+              padding: 10px 28px;
+              background: ${theme.badgeBg};
+              border: 1px solid ${theme.borderColor};
+              border-radius: 9999px;
+              color: ${theme.accentBadge};
+              font-size: 16px;
+              font-weight: 700;
+              letter-spacing: 3px;
+              text-transform: uppercase;
+              margin-bottom: 26px;
+            }
+            h1 {
+              font-size: 82px;
+              font-weight: 900;
+              letter-spacing: -2px;
+              line-height: 1.1;
+              margin-bottom: 22px;
+              background: linear-gradient(135deg, #ffffff 40%, ${theme.primaryLight} 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            p {
+              font-size: 26px;
+              color: #cbd5e1;
+              line-height: 1.5;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="orb-1"></div>
+          <div class="orb-2"></div>
+          <div class="glass-deck">
+            <div class="badge">OFFICIAL PRESENTATION</div>
+            <h1>${productName}</h1>
+            <p>${tagline}</p>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    if (theme.archetype === 'kinetic_editorial') {
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              width: ${width}px;
+              height: ${height}px;
+              background: ${theme.bgGradient};
+              color: #ffffff;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
+              position: relative;
+            }
+            .diagonal-stripe {
+              position: absolute;
+              width: 200%;
+              height: 160px;
+              background: linear-gradient(90deg, transparent, ${theme.primaryDark}, transparent);
+              opacity: 0.25;
+              transform: rotate(-12deg);
+            }
+            .content {
+              position: relative;
+              z-index: 10;
+              text-align: center;
+              padding: 60px 80px;
+            }
+            .tag-banner {
+              display: inline-block;
+              padding: 10px 30px;
+              background: ${theme.primary};
+              color: #030712;
+              border-radius: 8px;
+              font-size: 18px;
+              font-weight: 800;
+              letter-spacing: 3px;
+              text-transform: uppercase;
+              margin-bottom: 28px;
+              box-shadow: 0 10px 25px ${theme.glow};
+            }
+            h1 {
+              font-size: 92px;
+              font-weight: 900;
+              letter-spacing: -3px;
+              line-height: 1.05;
+              margin-bottom: 24px;
+              background: linear-gradient(135deg, #ffffff 50%, ${theme.primaryLight} 100%);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+            p {
+              font-size: 28px;
+              color: #e2e8f0;
+              max-width: 950px;
+              margin: 0 auto;
+              line-height: 1.5;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="diagonal-stripe"></div>
+          <div class="content">
+            <div class="tag-banner">PRODUCT PRESENTATION</div>
+            <h1>${productName}</h1>
+            <p>${tagline}</p>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    // Default archetype: Minimalist Spotlight & Horizon
     return `
       <!DOCTYPE html>
       <html>
@@ -517,7 +842,7 @@ class MotionDesigner {
           body {
             width: ${width}px;
             height: ${height}px;
-            background: radial-gradient(circle at 50% 50%, #17153a 0%, #030712 100%);
+            background: ${theme.bgGradient};
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
@@ -526,19 +851,19 @@ class MotionDesigner {
             overflow: hidden;
             position: relative;
           }
-          .grid-pattern {
+          .horizon-line {
             position: absolute;
-            inset: 0;
-            background-size: 60px 60px;
-            background-image:
-              linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            background: linear-gradient(90deg, transparent, ${theme.primary}, transparent);
+            opacity: 0.6;
           }
           .glow {
             position: absolute;
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 65%);
+            width: 850px;
+            height: 850px;
+            background: radial-gradient(circle, ${theme.glow} 0%, transparent 65%);
             filter: blur(60px);
           }
           .hero-container {
@@ -549,25 +874,25 @@ class MotionDesigner {
           }
           .badge {
             display: inline-block;
-            padding: 10px 26px;
-            background: rgba(99, 102, 241, 0.22);
-            border: 1px solid rgba(129, 140, 248, 0.5);
+            padding: 10px 28px;
+            background: ${theme.badgeBg};
+            border: 1px solid ${theme.borderColor};
             border-radius: 9999px;
-            color: #c7d2fe;
+            color: ${theme.accentBadge};
             font-size: 18px;
             font-weight: 700;
             letter-spacing: 3px;
             text-transform: uppercase;
             margin-bottom: 30px;
-            box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 25px ${theme.glow};
           }
           h1 {
-            font-size: 84px;
+            font-size: 86px;
             font-weight: 900;
             letter-spacing: -2px;
             line-height: 1.1;
             margin-bottom: 24px;
-            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            background: linear-gradient(135deg, #ffffff 40%, ${theme.primaryLight} 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 10px 40px rgba(0,0,0,0.6);
@@ -583,7 +908,7 @@ class MotionDesigner {
         </style>
       </head>
       <body>
-        <div class="grid-pattern"></div>
+        <div class="horizon-line"></div>
         <div class="glow"></div>
         <div class="hero-container">
           <div class="badge">OFFICIAL PRESENTATION</div>

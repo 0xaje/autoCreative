@@ -155,10 +155,12 @@ class VideoEditor {
       const subtitle = (scene.overlay.lowerThird.subtitle || '').replace(/'/g, '').replace(/:/g, '\\:');
       const badge = (scene.overlay.badge || 'VERIFIED').replace(/'/g, '').replace(/:/g, '\\:');
 
+      const accentColor = scene.overlay.color || '0x6366f1';
+      const badgeColor = scene.overlay.badgeHex || '0xa5b4fc';
       const boxY = height - 160;
       filter += `,drawbox=x=60:y=${boxY}:w=540:h=90:color=black@0.65:t=fill`;
-      filter += `,drawbox=x=60:y=${boxY}:w=6:h=90:color=0x6366f1@1.0:t=fill`;
-      filter += `,drawtext=text='${badge}':x=85:y=${boxY + 12}:fontsize=16:fontcolor=0xa5b4fc:font=sans`;
+      filter += `,drawbox=x=60:y=${boxY}:w=6:h=90:color=${accentColor}@1.0:t=fill`;
+      filter += `,drawtext=text='${badge}':x=85:y=${boxY + 12}:fontsize=16:fontcolor=${badgeColor}:font=sans`;
       filter += `,drawtext=text='${title}':x=85:y=${boxY + 36}:fontsize=24:fontcolor=white:font=sans`;
       filter += `,drawtext=text='${subtitle}':x=85:y=${boxY + 65}:fontsize=16:fontcolor=0x94a3b8:font=sans`;
     }

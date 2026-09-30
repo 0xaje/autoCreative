@@ -677,9 +677,34 @@ document.addEventListener('DOMContentLoaded', () => {
     showNotification(`Scene ${sceneIndex + 1} regenerated and master video updated`);
   }
 
-  // Duration Slider
+  // Duration Slider & Preset Chips
+  function updateDurationDisplay(val) {
+    const num = parseInt(val, 10);
+    let label = `${num}s`;
+    if (num === 60) label = '60s (1m)';
+    else if (num === 90) label = '90s (1.5m)';
+    else if (num === 120) label = '120s (2m)';
+    else if (num === 180) label = '180s (3m)';
+    else if (num >= 60) {
+      const mins = (num / 60).toFixed(1);
+      label = `${num}s (${mins}m)`;
+    }
+    durationVal.textContent = label;
+    document.querySelectorAll('.duration-chip').forEach(chip => {
+      chip.classList.toggle('active', parseInt(chip.dataset.duration, 10) === num);
+    });
+  }
+
   durationSlider.addEventListener('input', (e) => {
-    durationVal.textContent = `${e.target.value}s`;
+    updateDurationDisplay(e.target.value);
+  });
+
+  document.querySelectorAll('.duration-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const dur = chip.dataset.duration;
+      durationSlider.value = dur;
+      updateDurationDisplay(dur);
+    });
   });
 
   // Aspect Ratio Switcher
