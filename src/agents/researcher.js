@@ -214,7 +214,9 @@ class Researcher {
   }
 
   /**
-   * Product analysis on live URL with Puppeteer
+   * Deep Product analysis on live URL with Puppeteer
+   * Extracts hero value props, problem statements, structured feature cards, key metrics,
+   * multi-section screenshots, and sub-page architecture.
    */
   async analyzeLiveUrl(url, assetsDir) {
     let browser = null;
@@ -222,65 +224,170 @@ class Researcher {
       url,
       title: '',
       metaDescription: '',
+      heroHeadline: '',
+      heroSubheadline: '',
+      problemStatement: '',
+      solutionStatement: '',
       headings: [],
+      paragraphs: [],
       navLinks: [],
       buttons: [],
+      featureCards: [],
+      keyMetrics: [],
+      techBadges: [],
+      subPages: [],
       interactiveElements: [],
       workflows: [],
-      heroScreenshot: null
+      heroScreenshot: null,
+      visualAssets: {}
     };
 
     try {
       browser = await puppeteer.launch({
         executablePath: config.BINARIES.chrome,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--window-size=1920,1080'],
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-gpu',
+          '--window-size=1920,1080',
+          '--hide-scrollbars'
+        ],
         headless: 'new'
       });
 
       const page = await browser.newPage();
       await page.setViewport({ width: 1920, height: 1080 });
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
-      // Capture Hero Screenshot
+      // Navigate with SPA fallback
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 }).catch(() => {
+        return page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      });
+
+      // Allow 1.5s for dynamic SPA framework rendering / animations to settle
+      await new Promise(r => setTimeout(r, 1500));
+
+      // 1. Capture Top Hero Screenshot
       if (assetsDir) {
         const heroPath = path.join(assetsDir, 'hero-landing.png');
         await page.screenshot({ path: heroPath, type: 'png' });
         data.heroScreenshot = heroPath;
+        data.visualAssets.hero = heroPath;
       }
 
-      // Extract semantic DOM structure & discover primary workflows
+      // 2. Extract Deep Frontend Semantic DOM Structure
       const extracted = await page.evaluate(() => {
         const title = document.title || '';
         const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') ||
                          document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
         const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
 
-        const headings = Array.from(document.querySelectorAll('h1, h2, h3'))
-          .map(el => el.textContent.trim())
-          .filter(t => t.length > 3 && t.length < 120)
-          .slice(0, 10);
+        // Hero headline & subheadline
+        const h1El = document.querySelector('h1') || document.querySelector('header h2, .hero h2, [class*="hero"] h2');
+        const heroHeadline = h1El ? h1El.textContent.trim().replace(/\s+/g, ' ') : '';
 
+        const subEl = document.querySelector('.hero p, header p, h1 + p, p.lead, p.subtitle, [class*="hero"] p') ||
+                      document.querySelector('p');
+        const heroSubheadline = subEl ? subEl.textContent.trim().replace(/\s+/g, ' ').slice(0, 300) : '';
+
+        // Headings
+        const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4'))
+          .map(el => el.textContent.trim().replace(/\s+/g, ' '))
+          .filter(t => t.length > 3 && t.length < 120 && !t.includes('{') && !t.includes('}'))
+          .slice(0, 16);
+
+        // Problem Statement & Solution Statements
+        let problemStatement = '';
+        let solutionStatement = '';
+        const allParagraphs = Array.from(document.querySelectorAll('p, blockquote, .problem, .challenge, [class*="problem"], [class*="challenge"]'))
+          .map(p => p.textContent.trim().replace(/\s+/g, ' '))
+          .filter(t => t.length > 25 && t.length < 400);
+
+        const problemKeywords = ['problem', 'challenge', 'frustrated', 'pain', 'traditional', 'hard to', 'difficult', 'struggling', 'manual', 'waste', 'why we built', 'bottleneck', 'hours spent', 'fragmented'];
+        for (const p of allParagraphs) {
+          const lower = p.toLowerCase();
+          if (problemKeywords.some(kw => lower.includes(kw)) && !problemStatement) {
+            problemStatement = p;
+            break;
+          }
+        }
+
+        const solutionKeywords = ['solution', 'introduce', 'introducing', 'empowers', 'enables', 'reimagines', 'built for', 'simplifies', 'automatically', 'all-in-one', 'streamlines'];
+        for (const p of allParagraphs) {
+          const lower = p.toLowerCase();
+          if (solutionKeywords.some(kw => lower.includes(kw)) && !solutionStatement) {
+            solutionStatement = p;
+            break;
+          }
+        }
+
+        // Structured Feature Cards
+        const cardSelectors = '.card, [class*="feature"], [class*="card"], [class*="benefit"], [class*="pillar"], .grid > div, .flex > div, section article, .metric-card';
+        const rawCards = Array.from(document.querySelectorAll(cardSelectors));
+        const featureCards = [];
+        const seenCardTitles = new Set();
+
+        for (const card of rawCards) {
+          const titleEl = card.querySelector('h2, h3, h4, h5, strong, [class*="title"], [class*="heading"]');
+          const descEl = card.querySelector('p, [class*="desc"], [class*="text"], span');
+          if (titleEl && descEl) {
+            const cardTitle = titleEl.textContent.trim().replace(/\s+/g, ' ');
+            const cardDesc = descEl.textContent.trim().replace(/\s+/g, ' ');
+            const normTitle = cardTitle.toLowerCase();
+            if (cardTitle.length >= 3 && cardTitle.length < 60 && cardDesc.length >= 10 && cardDesc.length < 350 && !seenCardTitles.has(normTitle)) {
+              seenCardTitles.add(normTitle);
+              featureCards.push({
+                title: cardTitle,
+                description: cardDesc
+              });
+            }
+          }
+          if (featureCards.length >= 8) break;
+        }
+
+        // Key Metrics & Telemetry Stats
+        const keyMetrics = [];
+        const statEls = Array.from(document.querySelectorAll('[class*="metric"], [class*="stat"], [class*="counter"], [class*="number"], .stat-item, .metric-card'));
+        for (const s of statEls) {
+          const valEl = s.querySelector('[class*="val"], [class*="num"], strong, h2, h3, span') || s;
+          const labelEl = s.querySelector('[class*="label"], [class*="title"], [class*="desc"], p') || s;
+          const valText = valEl.textContent.trim();
+          const labelText = labelEl.textContent.trim();
+          const matchNum = valText.match(/(\d+[\d\.,]*(?:%|\+|k|x|ms|s|m|gb|tb|fps))/i);
+          if (matchNum && labelText.length > 2 && labelText.length < 50) {
+            const cleanLabel = labelText.replace(matchNum[0], '').trim();
+            if (cleanLabel) {
+              keyMetrics.push({ value: matchNum[0], label: cleanLabel });
+            }
+          }
+          if (keyMetrics.length >= 4) break;
+        }
+
+        // Navigation links & Buttons
         const navLinks = Array.from(document.querySelectorAll('nav a, header a, a.nav-link, [role="tab"]'))
           .map(el => ({
-            text: el.textContent.trim(),
+            text: el.textContent.trim().replace(/\s+/g, ' '),
             href: el.getAttribute('href') || '',
-            id: el.id || '',
             selector: el.id ? `#${el.id}` : el.className ? `.${el.className.split(' ')[0]}` : 'nav a'
           }))
-          .filter(l => l.text.length > 2 && l.text.length < 30)
-          .slice(0, 8);
+          .filter(l => l.text.length > 2 && l.text.length < 35)
+          .slice(0, 10);
 
         const buttons = Array.from(document.querySelectorAll('button, a.btn, a[role="button"], input[type="submit"]'))
           .map(el => ({
-            text: el.textContent.trim() || el.getAttribute('value') || '',
+            text: el.textContent.trim().replace(/\s+/g, ' ') || el.getAttribute('value') || '',
             id: el.id || '',
-            className: el.className || '',
             selector: el.id ? `#${el.id}` : 'button'
           }))
           .filter(b => b.text.length > 2 && b.text.length < 35)
           .slice(0, 10);
 
-        // Discover actionable workflows
+        // Tech Stack Badges
+        const techBadges = Array.from(document.querySelectorAll('.badge, .tag, [class*="badge"], [class*="tag"], [class*="tech"]'))
+          .map(el => el.textContent.trim().replace(/\s+/g, ' '))
+          .filter(t => t.length > 1 && t.length < 25 && !t.includes('{'))
+          .slice(0, 10);
+
+        // Workflows
         const workflows = [];
         if (buttons.length > 0) {
           workflows.push({
@@ -291,10 +398,19 @@ class Researcher {
             description: `Execute primary user action: ${buttons[0].text}`
           });
         }
+        if (featureCards.length > 0) {
+          workflows.push({
+            id: 'feature_walkthrough_flow',
+            name: featureCards[0].title,
+            targetSelector: cardSelectors,
+            actionType: 'highlight_feature',
+            description: `Deep walkthrough of ${featureCards[0].title}`
+          });
+        }
         if (navLinks.length > 1) {
           workflows.push({
             id: 'navigation_flow',
-            name: `Navigate to ${navLinks[1].text}`,
+            name: `Explore ${navLinks[1].text}`,
             targetSelector: navLinks[1].selector,
             actionType: 'click_tab',
             description: `Explore secondary view: ${navLinks[1].text}`
@@ -304,7 +420,15 @@ class Researcher {
         return {
           title: ogTitle || title,
           metaDescription: metaDesc,
+          heroHeadline,
+          heroSubheadline,
+          problemStatement,
+          solutionStatement,
           headings,
+          paragraphs: allParagraphs.slice(0, 8),
+          featureCards,
+          keyMetrics,
+          techBadges,
           navLinks,
           buttons,
           workflows
@@ -312,6 +436,64 @@ class Researcher {
       });
 
       Object.assign(data, extracted);
+
+      // 3. Multi-Section Screenshots & Visual Captures
+      if (assetsDir) {
+        // Scroll down to middle (features / interactive section)
+        await page.evaluate(() => window.scrollBy({ top: 650, behavior: 'instant' }));
+        await new Promise(r => setTimeout(r, 600));
+        const featPath = path.join(assetsDir, 'section-features.png');
+        await page.screenshot({ path: featPath, type: 'png' });
+        data.visualAssets.features = featPath;
+
+        // Scroll down further (workflow / dashboard / metrics)
+        await page.evaluate(() => window.scrollBy({ top: 750, behavior: 'instant' }));
+        await new Promise(r => setTimeout(r, 600));
+        const workflowPath = path.join(assetsDir, 'section-workflow.png');
+        await page.screenshot({ path: workflowPath, type: 'png' });
+        data.visualAssets.workflow = workflowPath;
+
+        // Reset scroll position
+        await page.evaluate(() => window.scrollTo(0, 0));
+      }
+
+      // 4. Explore up to 2 reachable sub-pages or documentation routes if present
+      const subRoutes = (extracted.navLinks || [])
+        .filter(l => l.href && (l.href.startsWith('/') || l.href.startsWith(url)) && !l.href.includes('#') && l.href !== url && l.href !== '/')
+        .slice(0, 2);
+
+      for (let i = 0; i < subRoutes.length; i++) {
+        const subRoute = subRoutes[i];
+        try {
+          const subPage = await browser.newPage();
+          await subPage.setViewport({ width: 1920, height: 1080 });
+          const targetUrl = subRoute.href.startsWith('http') ? subRoute.href : new URL(subRoute.href, url).href;
+          await subPage.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+          await new Promise(r => setTimeout(r, 600));
+
+          const subDetails = await subPage.evaluate(() => {
+            const h = Array.from(document.querySelectorAll('h1, h2, h3')).map(e => e.textContent.trim()).filter(Boolean).slice(0, 4);
+            const p = Array.from(document.querySelectorAll('p')).map(e => e.textContent.trim()).filter(t => t.length > 20).slice(0, 3);
+            return { headings: h, paragraphs: p };
+          });
+
+          if (assetsDir) {
+            const subShotPath = path.join(assetsDir, `subpage-${i + 1}.png`);
+            await subPage.screenshot({ path: subShotPath, type: 'png' });
+            data.visualAssets[`subpage_${i + 1}`] = subShotPath;
+          }
+
+          data.subPages.push({
+            name: subRoute.text,
+            url: targetUrl,
+            ...subDetails
+          });
+
+          await subPage.close();
+        } catch (subErr) {
+          // Non-blocking sub-page exploration
+        }
+      }
     } catch (err) {
       if (browser) await browser.close().catch(() => {});
       const unreachErr = new Error(`Cannot reach live application at ${url}: ${err.message}`);
@@ -373,26 +555,46 @@ class Researcher {
     if (liveUrlData && liveUrlData.title) {
       const liveName = liveUrlData.title.split(/[-–|]/)[0].trim();
       if (!name) name = liveName;
-      purpose = liveUrlData.metaDescription || liveUrlData.headings[0] || '';
     }
 
     if (!name && githubData && githubData.name) {
       name = githubData.name.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
-    if (!purpose && githubData && githubData.description) {
+    if (!name) name = 'Project Workspace';
+
+    // Purpose & Tagline from real frontend
+    if (liveUrlData?.heroSubheadline) {
+      purpose = liveUrlData.heroSubheadline;
+    } else if (liveUrlData?.metaDescription) {
+      purpose = liveUrlData.metaDescription;
+    } else if (liveUrlData?.solutionStatement) {
+      purpose = liveUrlData.solutionStatement;
+    } else if (githubData?.description) {
       purpose = githubData.description;
+    } else {
+      purpose = 'Next-generation software solution';
     }
 
-    if (!name) name = 'Project Workspace';
-    if (!purpose) purpose = (githubData && githubData.readmeContent) ? githubData.readmeContent.slice(0, 120).trim() : 'Software project architecture';
-    if (!problem) problem = 'Complex workflows require automated, dependable tools.';
+    // Problem Statement from real frontend
+    if (liveUrlData?.problemStatement) {
+      problem = liveUrlData.problemStatement;
+    } else if (liveUrlData?.headings?.length > 1) {
+      problem = `Developers and teams face high friction and manual bottlenecks with traditional workflows before ${name}.`;
+    } else {
+      problem = 'Complex workflows require automated, dependable tools.';
+    }
 
-    // Collect genuine features from real data
+    // Extract rich feature list: feature cards, github features, headings
+    const cardFeatures = (liveUrlData?.featureCards || []).map(fc => `${fc.title}: ${fc.description}`);
+    const headingFeatures = (liveUrlData?.headings || []).filter(h => h.length > 5 && h !== purpose && h !== name);
+    const githubFeatures = githubData ? (githubData.features || []) : [];
+
     const allFeatures = Array.from(new Set([
-      ...(githubData ? (githubData.features || []) : []),
-      ...(liveUrlData ? (liveUrlData.headings || []).filter(h => h.length > 5 && h !== purpose) : [])
-    ])).slice(0, 6);
+      ...cardFeatures,
+      ...githubFeatures,
+      ...headingFeatures
+    ])).slice(0, 10);
 
     const workflows = (liveUrlData?.workflows && liveUrlData.workflows.length > 0)
       ? liveUrlData.workflows
@@ -406,14 +608,22 @@ class Researcher {
       target_user: targetUser,
       problem,
       features: allFeatures,
+      featureCards: liveUrlData?.featureCards || [],
+      keyMetrics: liveUrlData?.keyMetrics || [],
+      subPages: liveUrlData?.subPages || [],
+      techBadges: liveUrlData?.techBadges || [],
       workflows,
-      integrations: githubData?.detectedTech || [],
+      integrations: Array.from(new Set([
+        ...(githubData?.detectedTech || []),
+        ...(liveUrlData?.techBadges || [])
+      ])),
       evidence: [],
       sourceMode: sourceMode || 'LIVE_URL',
       inputs,
       liveData: liveUrlData,
       githubData,
       heroScreenshot: liveUrlData?.heroScreenshot || null,
+      visualAssets: liveUrlData?.visualAssets || (liveUrlData?.heroScreenshot ? { hero: liveUrlData.heroScreenshot } : {}),
       analyzedAt: new Date().toISOString()
     };
   }

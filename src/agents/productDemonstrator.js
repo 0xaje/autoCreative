@@ -13,6 +13,8 @@ class ProductDemonstrator {
    */
   planInteraction(scene, sourceAnalysis) {
     const workflows = sourceAnalysis.workflows || [];
+    const featureCards = sourceAnalysis.featureCards || [];
+    const keyMetrics = sourceAnalysis.keyMetrics || [];
     const interactionType = scene.visualPlan?.interaction || 'explore_primary_feature';
     const actions = [];
 
@@ -22,16 +24,17 @@ class ProductDemonstrator {
     if (interactionType === 'explore_primary_feature') {
       // Prioritize semantic button or primary action
       const primaryWf = workflows[0];
+      const cardTitle0 = featureCards[0]?.title;
 
       // 1. Move to and highlight primary interactive element
       actions.push({
         type: 'semantic_highlight',
         semanticQuery: {
           roles: ['button', 'link'],
-          textHints: [primaryWf?.name, 'Deploy', 'Start', 'Explore', 'Overview', 'Dashboard'],
+          textHints: [primaryWf?.name, cardTitle0, 'Deploy', 'Start', 'Explore', 'Overview', 'Dashboard'].filter(Boolean),
           fallbackSelector: 'button.btn-primary, button, nav a:first-of-type'
         },
-        label: scene.overlay?.lowerThird?.title || 'Interactive Control',
+        label: scene.overlay?.lowerThird?.title || cardTitle0 || 'Interactive Control',
         duration: 1200
       });
 
@@ -40,7 +43,7 @@ class ProductDemonstrator {
         type: 'semantic_click',
         semanticQuery: {
           roles: ['button', 'link'],
-          textHints: [primaryWf?.name, 'Deploy', 'Start', 'Explore', 'Overview'],
+          textHints: [primaryWf?.name, cardTitle0, 'Deploy', 'Start', 'Explore', 'Overview'].filter(Boolean),
           fallbackSelector: 'button.btn-primary, button, nav a:first-of-type'
         },
         duration: 600
@@ -51,14 +54,15 @@ class ProductDemonstrator {
       actions.push({ type: 'wait', duration: 600 });
 
       // 4. Highlight live telemetry card
+      const metricHints = keyMetrics.map(m => m.label).filter(Boolean);
       actions.push({
         type: 'semantic_highlight',
         semanticQuery: {
           roles: ['table', 'region', 'group'],
-          textHints: ['Throughput', 'Metrics', 'Status', 'Streams'],
+          textHints: [...metricHints, 'Throughput', 'Metrics', 'Status', 'Streams'],
           fallbackSelector: '.metric-card, .card, table, canvas'
         },
-        label: 'Live Telemetry & Status',
+        label: keyMetrics[0] ? `${keyMetrics[0].value} ${keyMetrics[0].label}` : 'Live Telemetry & Status',
         duration: 1500
       });
 
@@ -67,6 +71,8 @@ class ProductDemonstrator {
     } else {
       // Deep dive feature interaction
       const secondaryWf = workflows[1] || workflows[0];
+      const cardTitle1 = featureCards[1]?.title || featureCards[0]?.title;
+      const searchTarget = cardTitle1 || sourceAnalysis.features?.[0] || sourceAnalysis.project || 'Explore';
 
       actions.push({ type: 'scroll', y: 250, duration: 600 });
 
@@ -77,7 +83,7 @@ class ProductDemonstrator {
           placeholderHints: ['Search', 'Filter', 'Enter', 'Query'],
           fallbackSelector: 'input[type="text"], input[type="search"], input'
         },
-        text: 'Production Stream Telemetry',
+        text: searchTarget,
         duration: 800
       });
 
@@ -86,7 +92,7 @@ class ProductDemonstrator {
         type: 'semantic_click',
         semanticQuery: {
           roles: ['tab', 'button'],
-          textHints: [secondaryWf?.name, '24 Hours', 'Analytics', 'Pipelines', 'Filter'],
+          textHints: [secondaryWf?.name, cardTitle1, '24 Hours', 'Analytics', 'Pipelines', 'Filter'].filter(Boolean),
           fallbackSelector: '[role="tab"], .tab-btn, button:nth-of-type(2)'
         },
         duration: 600

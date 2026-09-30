@@ -108,8 +108,11 @@ class MotionDesigner {
     const tagline = sourceAnalysis.purpose || sourceAnalysis.tagline || 'Next-Gen Creative Production';
     const theme = scene?.theme || getProjectBrandTheme(sourceAnalysis);
 
-    const techStack = sourceAnalysis.integrations || sourceAnalysis.githubData?.detectedTech || [];
+    const techStack = [...new Set([...(sourceAnalysis.techBadges || []), ...(sourceAnalysis.integrations || []), ...(sourceAnalysis.githubData?.detectedTech || [])])];
     const features = sourceAnalysis.features || [];
+    const featureCards = sourceAnalysis.featureCards || [];
+    const keyMetrics = sourceAnalysis.keyMetrics || [];
+    const visualAssets = sourceAnalysis.visualAssets || {};
     const sourceTree = sourceAnalysis.githubData?.sourceTree || ['src/', 'package.json', 'README.md'];
     const featureName = scene.overlay?.lowerThird?.subtitle || scene.title || 'Verified Architecture';
 
@@ -241,15 +244,25 @@ class MotionDesigner {
     }
 
     if (motionType === 'feature_card_flow') {
-      const featPills = features.slice(0, 4).map(f =>
-        `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px; backdrop-filter: blur(15px);">
-          <div style="width: 44px; height: 44px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${theme.primary}; font-weight: bold;">✓</div>
-          <div>
-            <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${f}</div>
-            <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository intelligence</div>
-          </div>
-        </div>`
-      ).join('');
+      const featPills = featureCards.length > 0
+        ? featureCards.slice(0, 4).map(c =>
+          `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 22px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: flex-start; gap: 16px; backdrop-filter: blur(15px);">
+            <div style="width: 40px; height: 40px; min-width: 40px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 18px; color: ${theme.primary}; font-weight: bold;">✓</div>
+            <div>
+              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${c.title}</div>
+              <div style="font-size: 14px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">${c.description || 'Verified live application capability'}</div>
+            </div>
+          </div>`
+        ).join('')
+        : features.slice(0, 4).map(f =>
+          `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px; backdrop-filter: blur(15px);">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${theme.primary}; font-weight: bold;">✓</div>
+            <div>
+              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${f}</div>
+              <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository intelligence</div>
+            </div>
+          </div>`
+        ).join('');
 
       return `
         <!DOCTYPE html>
@@ -541,13 +554,13 @@ class MotionDesigner {
           <div class="cards">
             <div class="column problem">
               <div class="tag">The Challenge</div>
-              <h3>Fragmented Tooling</h3>
-              <p>Teams lose valuable hours jumping between screen recorders, complex timeline editors, script writers, and manual render pipelines.</p>
+              <h3>${sourceAnalysis.problemTitle || 'Operational Friction'}</h3>
+              <p>${sourceAnalysis.problem || 'Fragmented workflows and manual processes create bottlenecks that cost engineering teams valuable velocity and focus.'}</p>
             </div>
             <div class="column solution">
               <div class="tag">The Solution</div>
               <h3>${productName}</h3>
-              <p>An autonomous creative studio that explores real applications, captures authentic footage, generates narration, and renders finished MP4s automatically.</p>
+              <p>${sourceAnalysis.purpose || tagline || 'A high-performance unified platform engineered to eliminate operational friction and deliver verified results.'}</p>
             </div>
           </div>
         </body>

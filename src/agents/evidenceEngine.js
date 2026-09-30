@@ -37,12 +37,24 @@ class EvidenceEngine {
     const features = sourceAnalysis.features || [];
     const readme = githubData.readmeContent || '';
 
-    // Collect all prospective claims from features, headings, and buttons
+    // Collect all prospective claims from feature cards, metrics, features, headings, and buttons
     const normalizedButtons = (liveData.buttons || [])
       .map(b => this.normalizeButtonText(b))
       .filter(text => text.length > 2);
 
+    const cardClaims = (liveData.featureCards || []).map(fc => ({
+      claim: fc.description ? `${fc.title}: ${fc.description}` : fc.title,
+      source: 'Frontend Feature Card'
+    }));
+
+    const metricClaims = (liveData.keyMetrics || []).map(m => ({
+      claim: `${m.value} ${m.label}`,
+      source: 'Frontend Telemetry / Metric'
+    }));
+
     const prospectiveClaims = [
+      ...cardClaims,
+      ...metricClaims,
       ...features.map(f => ({ claim: f, source: 'Features' })),
       ...(liveData.headings || []).map(h => ({ claim: h, source: 'Live Heading' })),
       ...normalizedButtons.slice(0, 5).map(btnText => ({ claim: `Actionable: ${btnText}`, source: 'Live UI Action' }))
@@ -144,10 +156,29 @@ class EvidenceEngine {
     let matchedLiveElement = false;
     let matchDescription = '';
 
+    // Check feature cards
+    if (liveData.featureCards && liveData.featureCards.some(fc => {
+      const cardTitle = (fc.title || '').toLowerCase();
+      return cardTitle.length > 2 && (lowerClaim.includes(cardTitle) || cardTitle.includes(lowerClaim));
+    })) {
+      matchedLiveElement = true;
+      matchDescription = 'Found structured feature card in live application interface.';
+    }
+
+    // Check key metrics
+    if (liveData.keyMetrics && liveData.keyMetrics.some(m => {
+      const val = (m.value || '').toLowerCase();
+      const label = (m.label || '').toLowerCase();
+      return (val && lowerClaim.includes(val)) || (label && lowerClaim.includes(label));
+    })) {
+      matchedLiveElement = true;
+      matchDescription = 'Verified live metric / performance telemetry in interface.';
+    }
+
     // Check headings
     if (liveData.headings && liveData.headings.some(h => h.toLowerCase().includes(lowerClaim) || lowerClaim.includes(h.toLowerCase()))) {
       matchedLiveElement = true;
-      matchDescription = 'Found active heading in live application DOM.';
+      matchDescription = matchDescription || 'Found active heading in live application DOM.';
     }
 
     // Check buttons
@@ -156,13 +187,13 @@ class EvidenceEngine {
       return btnText.length > 2 && (lowerClaim.includes(btnText) || btnText.includes(lowerClaim));
     })) {
       matchedLiveElement = true;
-      matchDescription = 'Action button found in live application interface.';
+      matchDescription = matchDescription || 'Action button found in live application interface.';
     }
 
     // Check nav links
     if (liveData.navLinks && liveData.navLinks.some(n => lowerClaim.includes(n.text.toLowerCase()) || n.text.toLowerCase().includes(lowerClaim))) {
       matchedLiveElement = true;
-      matchDescription = 'Dedicated navigation view verified in live application.';
+      matchDescription = matchDescription || 'Dedicated navigation view verified in live application.';
     }
 
     // Check tech stack confirmation

@@ -40,9 +40,13 @@ class CreativeDirector {
       .filter(c => c.state === 'VERIFIED')
       .map(c => c.claim);
 
-    const f1 = verifiedClaims[0] || features[0] || (projectModel.integrations?.[0] ? `${projectModel.integrations[0]} integration` : 'Modular architecture');
-    const f2 = verifiedClaims[1] || features[1] || (projectModel.integrations?.[1] ? `${projectModel.integrations[1]} integration` : 'Automated processing engine');
-    const f3 = verifiedClaims[2] || features[2] || 'Reliable operational design';
+    const featureCards = projectModel.featureCards || [];
+    const keyMetrics = projectModel.keyMetrics || [];
+    const visualAssets = projectModel.visualAssets || {};
+
+    const f1 = verifiedClaims[0] || featureCards[0]?.title || features[0] || (projectModel.integrations?.[0] ? `${projectModel.integrations[0]} integration` : 'Modular architecture');
+    const f2 = verifiedClaims[1] || featureCards[1]?.title || features[1] || (projectModel.integrations?.[1] ? `${projectModel.integrations[1]} integration` : 'Automated processing engine');
+    const f3 = verifiedClaims[2] || featureCards[2]?.title || features[2] || 'Reliable operational design';
 
     const brandTheme = getProjectBrandTheme(projectModel);
 
@@ -56,6 +60,12 @@ class CreativeDirector {
       f1,
       f2,
       f3,
+      featureCards,
+      keyMetrics,
+      visualAssets,
+      heroHeadline: projectModel.heroHeadline,
+      heroSubheadline: projectModel.heroSubheadline,
+      projectModel,
       customInstructions: intent.custom_instructions || [],
       isVertical,
       brandTheme
@@ -66,12 +76,15 @@ class CreativeDirector {
     if (isAIAvailable && typeof provider.generateStructured === 'function') {
       try {
         const aiDirective = await provider.generateStructured({
-          prompt: `You are the Creative Director for a high-production video about "${productName}".
+          prompt: `You are the Creative Director for a high-production video presentation about "${productName}".
 Source Mode: ${sourceMode}
-Audience: ${intent.audience || 'technical professionals'}
-Tone: ${intent.tone || 'premium'}
+Audience: ${intent.audience || 'technical professionals and judges'}
+Tone: ${intent.tone || 'premium, confident, hackathon-grade'}
 Target Duration: ${totalDuration} seconds.
-CRITICAL CONSTRAINT: You may ONLY reference verified features: ${JSON.stringify(verifiedClaims.length ? verifiedClaims : [f1, f2, f3])}.
+CRITICAL CONSTRAINT: You may ONLY reference verified features and metrics:
+Verified Claims: ${JSON.stringify(verifiedClaims.length ? verifiedClaims : [f1, f2, f3])}
+Discovered Feature Cards: ${JSON.stringify(featureCards.slice(0, 4))}
+Key Operational Metrics: ${JSON.stringify(keyMetrics.slice(0, 4))}
 DO NOT invent any unverified features or capabilities.
 
 Refine the narration for the following ${scenes.length} scenes:
@@ -168,7 +181,26 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
   /**
    * Build structured scenes according to PRD requirements, duration scaling, and brand identity
    */
-  buildSceneList({ sourceMode, contentType, totalDuration, productName, tagline, problem, f1, f2, f3, customInstructions = [], isVertical, brandTheme }) {
+  buildSceneList({
+    sourceMode,
+    contentType,
+    totalDuration,
+    productName,
+    tagline,
+    problem,
+    f1,
+    f2,
+    f3,
+    featureCards = [],
+    keyMetrics = [],
+    visualAssets = {},
+    heroHeadline,
+    heroSubheadline,
+    projectModel = {},
+    customInstructions = [],
+    isVertical,
+    brandTheme
+  }) {
     const theme = brandTheme || getProjectBrandTheme({ project: productName });
     const isRepoOnly = sourceMode === 'REPOSITORY_ANALYSIS_ONLY';
     const isDemo = sourceMode === 'DEMO';
@@ -183,6 +215,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
 
     const isLong = totalDuration >= 60;
     const isVeryLong = totalDuration >= 120;
+
+    const card0 = featureCards[0] || { title: f1, description: 'Core functional capability powering seamless operations' };
+    const card1 = featureCards[1] || { title: f2, description: 'High-performance engine maintaining continuous operational throughput' };
+    const card2 = featureCards[2] || { title: f3, description: 'Enterprise-grade architecture built for fault tolerance and scale' };
+    const metric0 = keyMetrics[0] || null;
+    const metricText = metric0 ? `${metric0.value} ${metric0.label}` : '';
 
     const makeOverlay = (title, subtitle, badge) => ({
       lowerThird: { title, subtitle },
@@ -258,13 +296,13 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: midDur,
           type: 'product_demo',
           purpose: 'Demonstrate primary live product workflow',
-          voiceover: `Watch this. In the live interface, ${f1} executes seamlessly with verified performance.`,
+          voiceover: `Watch this. In the live interface, ${card0.title} executes seamlessly with verified performance.`,
           visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
           title: isRepoExec ? 'Repository Runtime' : 'Live Product Action',
           overlay: makeOverlay(
             isRepoExec ? 'Repository Runtime' : 'Live Capability',
-            f1,
+            card0.title,
             isRepoExec ? 'VERIFIED REPO RUNTIME' : (isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW')
           ),
           theme
@@ -390,7 +428,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d1,
           type: 'hook',
           purpose: 'Introduce the problem and capture immediate attention',
-          voiceover: `Welcome to the official technical presentation of ${productName}. In today's digital landscape, modern teams face mounting pressure to accelerate delivery while maintaining absolute stability. ${productName}, ${tagline}, was engineered from the ground up to eliminate operational friction and deliver unmatched precision.`,
+          voiceover: `Welcome to the official technical presentation of ${productName}. In today's digital landscape, modern teams face mounting pressure to accelerate delivery while maintaining absolute stability. ${productName}, ${tagline}, was engineered from the ground up to solve ${problem || 'operational bottlenecks'} and deliver unmatched execution speed.`,
           visuals: [{ source: 'motion_graphic', motionType: 'intro_cinematic' }],
           evidenceState: 'VERIFIED',
           title: 'Cinematic Hook & Title',
@@ -402,11 +440,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d2,
           type: 'problem',
           purpose: 'Reveal the architecture and the core solution',
-          voiceover: `Traditional tools are fragmented and heavily manual, creating communication silos and deployment bottlenecks that cost organizations valuable engineering time. ${productName} directly solves this by consolidating core operations into a high-performance, unified architecture that keeps teams synchronized and productive.`,
+          voiceover: `Traditional approaches are fragmented and heavily manual, creating friction and deployment bottlenecks that cost organizations valuable engineering velocity. ${productName} directly solves this with a unified, high-performance architecture that keeps systems synchronized and teams productive.`,
           visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
           evidenceState: 'VERIFIED',
           title: 'The Challenge & Architecture',
-          overlay: makeOverlay('Architecture', 'Automated & Cohesive', 'ARCHITECTURE'),
+          overlay: makeOverlay('Architecture & Solution', card0.title, 'ARCHITECTURE'),
           theme
         },
         {
@@ -414,11 +452,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d3,
           type: 'product_demo',
           purpose: 'Demonstrate primary live workflow with real product footage',
-          voiceover: `Let us step inside the live application to witness the core workflow in action. With ${f1}, complex operations are initiated with intuitive controls and verified real-time feedback. Notice the immediate system responsiveness and how smoothly every critical state is captured and orchestrated.`,
+          voiceover: `Let us step inside the live application to witness the core workflow in action. With ${card0.title}, ${card0.description}. Notice the immediate system responsiveness and how smoothly every critical state transition is orchestrated.`,
           visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Core Product in Action',
-          overlay: makeOverlay('Live Capability', f1, isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
+          overlay: makeOverlay(card0.title, 'Live Capability', isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
           theme
         },
         {
@@ -426,11 +464,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d4,
           type: 'feature',
           purpose: 'Demonstrate deep dive feature with real telemetry results',
-          voiceover: `Delving deeper into the system capabilities, ${f2} provides robust, scalable processing designed specifically for mission-critical enterprise workloads. Telemetry signals and operational metrics are continuously validated, ensuring dependable performance even under sustained production load.`,
+          voiceover: `Delving deeper into system capabilities, ${card1.title} provides ${card1.description}. ${metric0 ? `Live benchmarks demonstrate ${metric0.value} ${metric0.label}, validating dependable throughput under sustained production load.` : 'Operational signals are continuously validated, ensuring dependable performance even under sustained production load.'}`,
           visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Deep Dive & Real Results',
-          overlay: makeOverlay('Performance Engine', f2, isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
+          overlay: makeOverlay(card1.title, metricText || 'Real Telemetry', isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
           theme
         },
         {
@@ -438,11 +476,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d5,
           type: 'product_demo',
           purpose: 'Demonstrate live real-time telemetry and system signals',
-          voiceover: `Observing the live metrics dashboard in real time, every operational event is tracked with millisecond accuracy. System operators gain instantaneous visibility into system throughput, latency profiles, and state health without touching complex command lines.`,
+          voiceover: `Observing real-time system signals across the live application, ${metric0 ? `every transaction is tracked with verified accuracy, achieving ${metric0.value} ${metric0.label}` : 'every operational event is tracked with millisecond accuracy'}. System operators gain instantaneous visibility into throughput, latency profiles, and health metrics without complex command lines.`,
           visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Telemetry & Operational Health',
-          overlay: makeOverlay('Live Telemetry', 'Real-Time Signal', isDemo ? 'DEMO EVIDENCE' : 'LIVE METRICS'),
+          overlay: makeOverlay(metricText || 'Live Telemetry', card2.title || 'System Signal', isDemo ? 'DEMO EVIDENCE' : 'LIVE METRICS'),
           theme
         },
         {
@@ -450,11 +488,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d6,
           type: 'capabilities',
           purpose: 'Enterprise reliability, security, and integrations',
-          voiceover: `Underpinning the entire platform is an enterprise-grade infrastructure built for high availability and continuous integration. From automated regression pipelines to modular component isolation, ${productName} guarantees the highest standards of software craft and operational resilience.`,
+          voiceover: `Underpinning the entire platform is an enterprise-grade infrastructure built for continuous resilience. ${card2 ? `With ${card2.title}, ${card2.description}.` : `From automated regression pipelines to modular component isolation, ${productName} guarantees the highest standards of software craft and operational uptime.`}`,
           visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Reliability & Integrations',
-          overlay: makeOverlay('Enterprise Grade', f3, 'SYSTEM CAPABILITY'),
+          overlay: makeOverlay('Enterprise Scale', card2.title, 'SYSTEM CAPABILITY'),
           theme
         },
         {
@@ -462,7 +500,7 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d7,
           type: 'ending',
           purpose: 'Encourage adoption with clear next steps',
-          voiceover: `Whether you are modernizing existing toolchains or launching ambitious new products, ${productName} provides the foundation you need to succeed. Experience the next generation of creative engineering. Get started today and transform the way your team builds.`,
+          voiceover: `Whether you are presenting for judges, modernizing existing toolchains, or launching ambitious new products, ${productName} provides the proven foundation you need to succeed. Experience ${productName} today and transform the way your team builds.`,
           visuals: [{ source: 'motion_graphic', motionType: 'outro_cta' }],
           evidenceState: 'VERIFIED',
           title: 'Momentum & Call to Action',
@@ -577,11 +615,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d2,
           type: 'problem',
           purpose: 'Reveal the architecture and the core solution',
-          voiceover: `Traditional tools are fragmented and manual, creating unnecessary bottlenecks. ${productName} reimagines the entire experience into an intuitive, unified platform that keeps you in flow.`,
+          voiceover: `Traditional tools are fragmented and manual, creating unnecessary bottlenecks. ${productName} solves ${problem || 'operational bottlenecks'} by unifying complex workflows into an intuitive, high-performance platform.`,
           visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
           evidenceState: 'VERIFIED',
           title: 'The Challenge & Architecture',
-          overlay: makeOverlay('Architecture', 'Automated & Cohesive', 'ARCHITECTURE'),
+          overlay: makeOverlay('Architecture & Solution', card0.title, 'ARCHITECTURE'),
           theme
         },
         {
@@ -589,11 +627,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d3,
           type: 'product_demo',
           purpose: 'Demonstrate primary live workflow with real product footage',
-          voiceover: `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}. Every interaction executes smoothly with verified real-time feedback.`,
+          voiceover: `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${card0.title}. ${card0.description}, delivering verified real-time feedback with every interaction.`,
           visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Core Product in Action',
-          overlay: makeOverlay('Live Capability', f1, isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
+          overlay: makeOverlay(card0.title, 'Live Capability', isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
           theme
         },
         {
@@ -601,11 +639,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d4,
           type: 'feature',
           purpose: 'Demonstrate deep dive feature with real telemetry results',
-          voiceover: `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics. Everything operates seamlessly under load with continuous verification.`,
+          voiceover: `Behind the scenes, ${card1.title} delivers ${card1.description}. ${metric0 ? `Production telemetry verifies ${metric0.value} ${metric0.label}, running seamlessly under peak conditions.` : 'Everything operates seamlessly under load with continuous verification.'}`,
           visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Deep Dive & Real Results',
-          overlay: makeOverlay('Performance Engine', f2, isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
+          overlay: makeOverlay(card1.title, metricText || 'Telemetry', isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
           theme
         },
         {
@@ -613,11 +651,11 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
           duration: d5,
           type: 'capabilities',
           purpose: 'Highlight verified system capabilities and reliability',
-          voiceover: `Engineered for enterprise scale, ${f3} provides continuous observability and automated safety rails that elevate production quality across your entire stack.`,
+          voiceover: `Engineered for enterprise scale, ${card2.title} ${card2.description || 'provides continuous observability and automated safety rails that elevate production quality across your entire stack.'}`,
           visuals: [{ source: 'motion_graphic', motionType: 'feature_card_flow' }],
           evidenceState: 'VERIFIED',
           title: 'Enterprise Scalability',
-          overlay: makeOverlay('Scalability Engine', f3, 'SYSTEM CAPABILITY'),
+          overlay: makeOverlay('Enterprise Scalability', card2.title, 'SYSTEM CAPABILITY'),
           theme
         },
         {
@@ -739,12 +777,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         type: 'problem',
         purpose: 'Reveal the architecture and the core solution',
         voiceover: isLong
-          ? `Traditional tools are fragmented and manual, creating unnecessary bottlenecks. ${productName} reimagines the entire experience into an intuitive, unified platform that keeps you in flow.`
-          : `Traditional tools are fragmented and manual. ${productName} reimagines the entire experience into an intuitive, unified platform.`,
+          ? `Traditional tools are fragmented and manual. ${productName} solves ${problem || 'operational friction'} by unifying workflows into an intuitive, high-performance platform.`
+          : `Traditional tools are fragmented. ${productName} reimagines the entire workflow into an intuitive, unified platform.`,
         visuals: [{ source: 'motion_graphic', motionType: 'problem_solution_split' }],
         evidenceState: 'VERIFIED',
         title: 'The Challenge & Architecture',
-        overlay: makeOverlay('Architecture', 'Automated & Cohesive', 'ARCHITECTURE'),
+        overlay: makeOverlay('Architecture & Solution', card0.title, 'ARCHITECTURE'),
         theme
       },
       {
@@ -753,12 +791,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         type: 'product_demo',
         purpose: 'Demonstrate primary live workflow with real product footage',
         voiceover: isLong
-          ? `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}. Every interaction executes smoothly with verified real-time feedback.`
-          : `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${f1}.`,
+          ? `Here is the actual application at work. Notice how effortlessly you can leverage ${card0.title}. ${card0.description}, with verified real-time feedback.`
+          : `Here is the actual application at work. Notice how effortlessly you can navigate and leverage ${card0.title}.`,
         visuals: [{ source: 'browser_recording', recording_id: 'primary_flow' }],
         evidenceState: 'VERIFIED',
         title: 'Core Product in Action',
-        overlay: makeOverlay('Live Capability', f1, isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
+        overlay: makeOverlay(card0.title, 'Live Capability', isDemo ? 'DEMO EVIDENCE' : 'LIVE WORKFLOW'),
         theme
       },
       {
@@ -767,12 +805,12 @@ Provide an array of objects matching each scene id with refined, punchy, spoken 
         type: 'feature',
         purpose: 'Demonstrate deep dive feature with real telemetry results',
         voiceover: isLong
-          ? `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics. Everything operates seamlessly under load with continuous verification.`
-          : `Behind the scenes, ${f2} delivers dependable performance, validated against real-world production metrics.`,
+          ? `Behind the scenes, ${card1.title} delivers ${card1.description}. ${metric0 ? `Live telemetry confirms ${metric0.value} ${metric0.label}.` : 'Everything operates seamlessly under load with continuous verification.'}`
+          : `Behind the scenes, ${card1.title} delivers dependable performance, validated against real-world production metrics.`,
         visuals: [{ source: 'browser_recording', recording_id: 'deep_flow' }],
         evidenceState: 'VERIFIED',
         title: 'Deep Dive & Real Results',
-        overlay: makeOverlay('Performance Engine', f2, isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
+        overlay: makeOverlay(card1.title, metricText || 'Telemetry Engine', isDemo ? 'DEMO EVIDENCE' : 'LIVE TELEMETRY'),
         theme
       },
       {
