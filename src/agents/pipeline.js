@@ -409,7 +409,7 @@ class ProductionPipeline extends EventEmitter {
       try {
         qcReport = await this.qualityController.inspectMasterVideo({
           videoPath: renderResult.projectRootMp4,
-          targetDuration: totalAudioDuration,
+          targetDuration: totalTimelineDuration,
           resolution,
           projectDir,
           onProgress: (p) => setStage(PROJECT_STATES.QUALITY_CHECK, p.message, 97, p.agent)
@@ -556,10 +556,10 @@ class ProductionPipeline extends EventEmitter {
 
     // Re-mix master audio
     log('Audio Engineer', 'Re-mixing master soundtrack with updated stems...', 70);
-    const totalAudioDuration = manifest.scenes.reduce((acc, s) => acc + (s.audioDuration || 5), 0);
+    const timelineDuration = manifest.scenes.reduce((acc, s) => acc + (s.duration || 8), 0);
     const masterAudio = await this.audioEngineer.produceMasterAudio({
       scenes: manifest.scenes,
-      totalDuration: totalAudioDuration,
+      totalDuration: timelineDuration,
       musicStyle: projectData.inputs.musicStyle || 'cinematic',
       projectDir,
       onProgress: (p) => log(p.agent, p.message)
@@ -583,7 +583,7 @@ class ProductionPipeline extends EventEmitter {
     log('Quality Controller', 'Inspecting regenerated MP4 output...', 95);
     const qcReport = await this.qualityController.inspectMasterVideo({
       videoPath: renderResult.projectRootMp4,
-      targetDuration: totalAudioDuration,
+      targetDuration: timelineDuration,
       resolution: manifest.resolution,
       projectDir,
       onProgress: (p) => log(p.agent, p.message)
