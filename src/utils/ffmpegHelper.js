@@ -44,6 +44,31 @@ function runFFmpeg(args, options = {}) {
 }
 
 /**
+ * Safely parse a frame rate string (e.g. "30/1", "30000/1001", "29.97") without eval.
+ * Returns a floating-point number, or null if invalid or non-numeric.
+ */
+function parseFrameRate(rateStr) {
+  if (typeof rateStr !== 'string') return null;
+  const trimmed = rateStr.trim();
+  if (!trimmed) return null;
+
+  // Handle fractional format "numerator/denominator"
+  if (trimmed.includes('/')) {
+    const parts = trimmed.split('/');
+    if (parts.length !== 2) return null;
+    const num = Number(parts[0]);
+    const den = Number(parts[1]);
+    if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) return null;
+    const val = num / den;
+    return Number.isFinite(val) && val > 0 ? val : null;
+  }
+
+  // Handle direct numeric float/integer
+  const val = Number(trimmed);
+  return Number.isFinite(val) && val > 0 ? val : null;
+}
+
+/**
  * Run ffprobe to get comprehensive JSON metadata
  */
 function getVideoMetadata(filePath) {
@@ -83,7 +108,7 @@ function getVideoMetadata(filePath) {
           duration,
           width: videoStream ? videoStream.width : null,
           height: videoStream ? videoStream.height : null,
-          fps: videoStream && videoStream.r_frame_rate ? eval(videoStream.r_frame_rate) : null,
+          fps: videoStream ? (parseFrameRate(videoStream.r_frame_rate) || parseFrameRate(videoStream.avg_frame_rate)) : null,
           videoCodec: videoStream ? videoStream.codec_name : null,
           audioCodec: audioStream ? audioStream.codec_name : null,
           audioChannels: audioStream ? audioStream.channels : null,
@@ -112,5 +137,6 @@ module.exports = {
   runFFmpeg,
   getVideoMetadata,
   getMediaMetadata: getVideoMetadata,
+  parseFrameRate,
   ensureDir
 };
