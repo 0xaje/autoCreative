@@ -1,10 +1,27 @@
 // Autonomous Creative Production Studio — Client Console
-document.addEventListener('DOMContentLoaded', () => {
-  let currentProjectId = null;
-  let currentProjectData = null;
-  let socket = null;
-  let currentAspect = '16:9';
-  let activeSubtitles = [];
+
+// HTML entity escaping for XSS prevention
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+if (typeof window !== 'undefined') {
+  window.__escapeHtml = escapeHtml;
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    let currentProjectId = null;
+    let currentProjectData = null;
+    let socket = null;
+    let currentAspect = '16:9';
+    let activeSubtitles = [];
 
   // DOM Elements
   const form = document.getElementById('production-form');
@@ -412,25 +429,41 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    timelineScenesList.innerHTML = scenes.map((scene, idx) => `
-      <div class="timeline-scene-card" data-index="${idx}" tabindex="0" role="button" aria-label="Seek to Scene ${idx + 1}: ${scene.title}">
-        <span class="scene-num-badge">SCENE 0${idx + 1} &bull; ${(scene.audioDuration || scene.targetDuration || 0).toFixed(1)}s</span>
-        <h4 class="scene-title-text">${scene.title}</h4>
-        <p class="scene-narration-snippet">${scene.narrationText}</p>
-        <div class="scene-tags-group">
-          <span class="pill-tag">${scene.type.replace('_', ' ')}</span>
-          <span class="pill-tag verified">${scene.evidenceState || 'VERIFIED'}</span>
-        </div>
-        <button type="button" class="btn-scene-regen" onclick="window.__openRegenModal(${idx})">
-          Regenerate Scene
-        </button>
-      </div>
-    `).join('');
+    timelineScenesList.innerHTML = scenes.map((scene, idx) => {
+      const dur = (scene.audioDuration || scene.targetDuration || 0).toFixed(1);
+      const safeTitle = escapeHtml(scene.title || 'Untitled Scene');
+      const safeNarration = escapeHtml(scene.narrationText || '');
+      const safeType = escapeHtml((scene.type || 'scene').replace(/_/g, ' '));
+      const safeEvidence = escapeHtml(scene.evidenceState || 'VERIFIED');
+      const safeIndex = parseInt(idx, 10);
 
-    // Attach click-to-seek listeners on scene cards
+      return `
+        <div class="timeline-scene-card" data-index="${safeIndex}" tabindex="0" role="button" aria-label="Seek to Scene ${safeIndex + 1}: ${safeTitle}">
+          <span class="scene-num-badge">SCENE 0${safeIndex + 1} &bull; ${dur}s</span>
+          <h4 class="scene-title-text">${safeTitle}</h4>
+          <p class="scene-narration-snippet">${safeNarration}</p>
+          <div class="scene-tags-group">
+            <span class="pill-tag">${safeType}</span>
+            <span class="pill-tag verified">${safeEvidence}</span>
+          </div>
+          <button type="button" class="btn-scene-regen" data-index="${safeIndex}">
+            Regenerate Scene
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click-to-seek and regen button listeners on scene cards
     document.querySelectorAll('.timeline-scene-card').forEach((card, idx) => {
       card.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-scene-regen')) return;
+        const regenBtn = e.target.closest('.btn-scene-regen');
+        if (regenBtn) {
+          const index = parseInt(regenBtn.dataset.index, 10);
+          if (typeof window.__openRegenModal === 'function') {
+            window.__openRegenModal(index);
+          }
+          return;
+        }
         const sc = activeScenesList[idx];
         if (sc) {
           studioVideo.currentTime = sc.startSec;
@@ -440,7 +473,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          if (e.target.closest('.btn-scene-regen')) return;
+          const regenBtn = e.target.closest('.btn-scene-regen');
+          if (regenBtn) {
+            e.preventDefault();
+            const index = parseInt(regenBtn.dataset.index, 10);
+            if (typeof window.__openRegenModal === 'function') {
+              window.__openRegenModal(index);
+            }
+            return;
+          }
           e.preventDefault();
           const sc = activeScenesList[idx];
           if (sc) {
@@ -461,21 +502,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) return;
       const data = await res.json();
 
+      const sourceMode = escapeHtml(data.sourceMode || '');
       evidenceStatsPills.innerHTML = `
-        ${data.sourceMode ? `<span class="evidence-pill ${data.sourceMode === 'DEMO' ? 'future' : 'verified'}">Source: ${data.sourceMode}</span>` : ''}
-        <span class="evidence-pill verified">${data.verifiedCount || 0} Verified</span>
-        <span class="evidence-pill partial">${data.partialCount || 0} Partial</span>
-        <span class="evidence-pill unverified">${data.unverifiedCount || 0} Unverified (Excluded)</span>
-        <span class="evidence-pill future">${data.futureCount || 0} Future Roadmap</span>
+        ${sourceMode ? `<span class="evidence-pill ${sourceMode === 'DEMO' ? 'future' : 'verified'}">Source: ${sourceMode}</span>` : ''}
+        <span class="evidence-pill verified">${escapeHtml(data.verifiedCount || 0)} Verified</span>
+        <span class="evidence-pill partial">${escapeHtml(data.partialCount || 0)} Partial</span>
+        <span class="evidence-pill unverified">${escapeHtml(data.unverifiedCount || 0)} Unverified (Excluded)</span>
+        <span class="evidence-pill future">${escapeHtml(data.futureCount || 0)} Future Roadmap</span>
       `;
 
       evidenceTableBody.innerHTML = (data.claims || []).map(c => `
         <tr>
-          <td><strong class="evidence-claim-text">${c.claim}</strong></td>
-          <td><span class="evidence-pill ${(c.state || '').toLowerCase()}">${c.state}</span></td>
+          <td><strong class="evidence-claim-text">${escapeHtml(c.claim || '')}</strong></td>
+          <td><span class="evidence-pill ${escapeHtml((c.state || '').toLowerCase())}">${escapeHtml(c.state || '')}</span></td>
           <td class="evidence-confidence-cell">${Math.round((c.confidence || 0) * 100)}%</td>
-          <td class="evidence-rationale-cell">${c.rationale || '—'}</td>
-          <td><code class="evidence-visual-code">${c.suggestedVisual || '—'}</code></td>
+          <td class="evidence-rationale-cell">${escapeHtml(c.rationale || '—')}</td>
+          <td><code class="evidence-visual-code">${escapeHtml(c.suggestedVisual || '—')}</code></td>
         </tr>
       `).join('');
     } catch (e) {
@@ -500,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modelFeaturesList) {
         if (data.features && data.features.length > 0) {
           modelFeaturesList.innerHTML = data.features.map(f =>
-            `<span class="pill-tag verified">${f}</span>`
+            `<span class="pill-tag verified">${escapeHtml(f)}</span>`
           ).join('');
         } else {
           modelFeaturesList.innerHTML = '<span class="form-hint">No explicit features listed.</span>';
@@ -511,8 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.workflows && data.workflows.length > 0) {
           modelWorkflowsList.innerHTML = data.workflows.map(w => `
             <div class="workflow-item">
-              <span class="workflow-item-name">${w.name || w.id || 'Interactive Workflow'}</span>
-              <span class="workflow-item-action">${w.action || w.target || 'CDP Exploration'}</span>
+              <span class="workflow-item-name">${escapeHtml(w.name || w.id || 'Interactive Workflow')}</span>
+              <span class="workflow-item-action">${escapeHtml(w.action || w.target || 'CDP Exploration')}</span>
             </div>
           `).join('');
         } else {
@@ -529,8 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!scenes || scenes.length === 0) return;
     scriptContainer.innerHTML = scenes.map((s, idx) => `
       <div class="script-card">
-        <span class="form-hint script-card-header">SCENE 0${idx + 1}: ${s.title.toUpperCase()} (${s.evidenceState || 'VERIFIED'})</span>
-        <p class="script-card-body">${s.narrationText}</p>
+        <span class="form-hint script-card-header">SCENE 0${idx + 1}: ${escapeHtml((s.title || '').toUpperCase())} (${escapeHtml(s.evidenceState || 'VERIFIED')})</span>
+        <p class="script-card-body">${escapeHtml(s.narrationText || '')}</p>
       </div>
     `).join('');
   }
@@ -844,24 +886,33 @@ document.addEventListener('DOMContentLoaded', () => {
         archiveProjectsList.innerHTML = projects.map(p => `
           <div class="archive-project-row">
             <div>
-              <span class="archive-project-title">${p.manifest?.projectTitle || p.id}</span>
+              <span class="archive-project-title">${escapeHtml(p.manifest?.projectTitle || p.id)}</span>
               <div class="archive-project-meta">
-                <span>${p.inputs?.mode || 'launch'}</span>
+                <span>${escapeHtml(p.inputs?.mode || 'launch')}</span>
                 <span>&bull;</span>
-                <span>${p.inputs?.duration || 60}s</span>
+                <span>${escapeHtml(p.inputs?.duration || 60)}s</span>
                 <span>&bull;</span>
-                <span>${p.inputs?.aspectRatio || '16:9'}</span>
+                <span>${escapeHtml(p.inputs?.aspectRatio || '16:9')}</span>
                 <span>&bull;</span>
-                <span style="color: ${p.status === 'COMPLETED' ? 'var(--status-verified)' : 'var(--text-secondary)'};">${p.status}</span>
+                <span style="color: ${p.status === 'COMPLETED' ? 'var(--status-verified)' : 'var(--text-secondary)'};">${escapeHtml(p.status)}</span>
               </div>
             </div>
-            <button type="button" class="btn btn-secondary" onclick="window.__loadArchiveProject('${p.id}')">
+            <button type="button" class="btn btn-secondary btn-load-archive" data-id="${escapeHtml(p.id)}">
               Open in Studio
             </button>
           </div>
         `).join('');
+
+        archiveProjectsList.querySelectorAll('.btn-load-archive').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            if (id && typeof window.__loadArchiveProject === 'function') {
+              window.__loadArchiveProject(id);
+            }
+          });
+        });
       } catch (err) {
-        archiveProjectsList.innerHTML = `<span class="form-hint" style="color: var(--status-error);">Error: ${err.message}</span>`;
+        archiveProjectsList.innerHTML = `<span class="form-hint" style="color: var(--status-error);">Error: ${escapeHtml(err.message)}</span>`;
       }
     });
   }
@@ -964,3 +1015,8 @@ document.addEventListener('DOMContentLoaded', () => {
   connectWebSocket();
   loadInitialProject();
 });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { escapeHtml };
+}
