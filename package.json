@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
+    "dev": "fuser -k 4500/tcp 2>/dev/null || true; node --watch server.js",
     "build": "echo 'Static studio assets ready' && npm run typecheck",
     "cli": "node cli.js",
     "demo": "node cli.js --duration 30 --mode launch",

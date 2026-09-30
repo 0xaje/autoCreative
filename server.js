@@ -10,6 +10,11 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+wss.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') return; // Handled on server
+  console.error('WebSocket server error:', err);
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'src', 'public')));
 app.use('/projects', express.static(config.PROJECTS_DIR));
@@ -335,7 +340,41 @@ app.get('/api/projects/:id/video', (req, res) => {
   }
 });
 
-// Start listening
+// Start listening with automatic port recovery
+let portRecoveryAttempted = false;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    if (!portRecoveryAttempted) {
+      portRecoveryAttempted = true;
+      console.warn(`⚠️ Port ${config.PORT} is currently in use. Automatically freeing port...`);
+      try {
+        require('child_process').execSync(`fuser -k ${config.PORT}/tcp 2>/dev/null || true`);
+      } catch (_) {}
+      setTimeout(() => {
+        server.listen(config.PORT);
+      }, 600);
+      return;
+    }
+    console.error(`\n❌ Error: Port ${config.PORT} is already in use by another process.`);
+    console.error(`💡 Free the port with: fuser -k ${config.PORT}/tcp\n`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
+});
+
+const gracefulShutdown = () => {
+  try {
+    wss.clients.forEach(client => client.close());
+    server.close(() => process.exit(0));
+  } catch (_) {}
+  setTimeout(() => process.exit(0), 1000).unref();
+};
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
 server.listen(config.PORT, () => {
   console.log(`=======================================================`);
   console.log(`🎬 Autonomous Creative Production Studio`);
