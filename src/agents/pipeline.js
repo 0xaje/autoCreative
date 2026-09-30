@@ -472,6 +472,7 @@ class ProductionPipeline extends EventEmitter {
 
     let needsVoiceResynth = false;
     let needsVideoReassemble = false;
+    let needsVisualResync = false;
 
     // 1. If opening modified ("make the opening stronger")
     if (updatedIntent.custom_instructions.includes('enhance_hook') && manifest.scenes[0]) {
@@ -508,6 +509,7 @@ class ProductionPipeline extends EventEmitter {
       const dashScene = manifest.scenes.find(s => s.type === 'product_demo' || s.id.includes('demo') || s.id.includes('workflow'));
       if (dashScene) {
         dashScene.duration = Math.max(dashScene.duration, 15);
+        needsVideoReassemble = true;
       }
     }
 
@@ -526,13 +528,40 @@ class ProductionPipeline extends EventEmitter {
       manifest.aspectRatio = updatedIntent.aspect_ratio;
       manifest.resolution = config.RESOLUTIONS[updatedIntent.aspect_ratio] || { width: 1080, height: 1920 };
       needsVideoReassemble = true;
+      needsVisualResync = true;
     }
 
     // 7. If duration changed ("make it 60 seconds")
-    if (updatedIntent.duration_seconds && Math.abs(updatedIntent.duration_seconds - manifest.duration) > 5) {
-      log('Creative Director', `Adjusting timeline duration to ${updatedIntent.duration_seconds}s...`, 32);
-      manifest.duration = updatedIntent.duration_seconds;
+    if (updatedIntent.duration_seconds && Math.abs(updatedIntent.duration_seconds - manifest.duration) > 2) {
+      const newTotal = updatedIntent.duration_seconds;
+      const oldTotal = manifest.scenes.reduce((acc, s) => acc + (s.duration || 8), 0) || manifest.duration || newTotal;
+      log('Creative Director', `Rescaling timeline duration from ${oldTotal}s to ${newTotal}s across ${manifest.scenes.length} scenes...`, 32);
+
+      manifest.duration = newTotal;
+      manifest.targetTotalDuration = newTotal;
+
+      let allocated = 0;
+      for (let i = 0; i < manifest.scenes.length; i++) {
+        const s = manifest.scenes[i];
+        if (i === manifest.scenes.length - 1) {
+          s.duration = Math.max(newTotal - allocated, 3);
+        } else {
+          const ratio = (s.duration || 8) / oldTotal;
+          const scaledDur = Math.max(Math.round(ratio * newTotal), 3);
+          s.duration = scaledDur;
+          allocated += scaledDur;
+        }
+      }
+
+      // Ensure sum strictly equals newTotal
+      const currentSum = manifest.scenes.reduce((acc, s) => acc + s.duration, 0);
+      const diff = newTotal - currentSum;
+      if (diff !== 0 && manifest.scenes.length > 0) {
+        manifest.scenes[manifest.scenes.length - 1].duration += diff;
+      }
+
       needsVideoReassemble = true;
+      needsVisualResync = true;
     }
 
     // 8. If voice changed ("use a faster voice" or "use a female voice")
@@ -551,12 +580,52 @@ class ProductionPipeline extends EventEmitter {
         });
         scene.audioPath = vResult.audioPath;
         scene.audioDuration = vResult.duration;
+        scene.subtitlesPath = vResult.subtitlesPath;
+        scene.subtitles = vResult.subtitles;
+      }
+      if (scene.audioDuration && scene.audioDuration > scene.duration) {
+        scene.duration = Math.ceil(scene.audioDuration + 0.5);
+      }
+    }
+
+    // Re-sync visual clips if duration or resolution changed
+    if (needsVisualResync) {
+      for (let i = 0; i < manifest.scenes.length; i++) {
+        const scene = manifest.scenes[i];
+        const primaryVisual = scene.visuals?.[0] || {};
+        const isMotionGraphic = primaryVisual.source === 'motion_graphic' || scene.type !== 'product_demo';
+
+        if (isMotionGraphic) {
+          log('Motion Designer', `Re-rendering motion graphics for Scene ${i + 1} (${scene.duration}s)...`, 55);
+          const motionType = primaryVisual.motionType || (scene.id === 'hook' ? 'intro_cinematic' : scene.id === 'product_reveal' ? 'problem_solution_split' : 'outro_cta');
+          try {
+            const motionResult = await this.motionDesigner.renderMotionClip({
+              scene: {
+                id: scene.id,
+                title: scene.title,
+                targetDuration: scene.duration,
+                visualPlan: { motionType },
+                overlay: scene.overlay
+              },
+              sourceAnalysis: projectModel,
+              durationSeconds: scene.duration,
+              resolution: manifest.resolution,
+              projectDir,
+              onProgress: (p) => log(p.agent, p.message)
+            });
+            scene.videoPath = motionResult.outputPath;
+          } catch (mErr) {
+            console.warn(`Motion re-render warning for scene ${scene.id}:`, mErr.message);
+          }
+        }
       }
     }
 
     // Re-mix master audio
     log('Audio Engineer', 'Re-mixing master soundtrack with updated stems...', 70);
     const timelineDuration = manifest.scenes.reduce((acc, s) => acc + (s.duration || 8), 0);
+    manifest.duration = timelineDuration;
+    manifest.targetTotalDuration = timelineDuration;
     const masterAudio = await this.audioEngineer.produceMasterAudio({
       scenes: manifest.scenes,
       totalDuration: timelineDuration,

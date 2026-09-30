@@ -156,6 +156,37 @@ console.log('✅ Test 1 Passed: ProductionPipeline.regenerateScene method is def
   assert(!caughtDoubleHeader, 'headersSent check must guard against double response');
   console.log('✅ Test 5 Passed: headersSent guard protects against ERR_HTTP_HEADERS_SENT');
 
+  // 6. Test Natural Language Duration Change proportionally rescales all scene durations
+  console.log('Testing natural language duration change (e.g. "make it 60 seconds")...');
+  
+  // Set initial scene durations: scene 0 = 6s, scene 1 = 14s (sum = 20s)
+  const baseManifest = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'scene-manifest.json'), 'utf8'));
+  baseManifest.duration = 20;
+  baseManifest.scenes[0].duration = 6;
+  baseManifest.scenes[1].duration = 14;
+  fs.writeFileSync(path.join(testProjectDir, 'scene-manifest.json'), JSON.stringify(baseManifest, null, 2), 'utf8');
+
+  // Also write mock project_model.json
+  fs.writeFileSync(path.join(testProjectDir, 'project_model.json'), JSON.stringify({
+    project: 'Regen Test Project',
+    purpose: 'Autonomous video testing'
+  }, null, 2), 'utf8');
+
+  const regenResult = await pipeline.executeNaturalLanguageRegeneration(testProjectId, 'make it 60 seconds');
+
+  const updatedManifest2 = JSON.parse(fs.readFileSync(path.join(testProjectDir, 'scene-manifest.json'), 'utf8'));
+  const sumSceneDurations = updatedManifest2.scenes.reduce((acc, s) => acc + s.duration, 0);
+
+  assert.strictEqual(updatedManifest2.duration, 60, 'Manifest duration must be 60');
+  assert.strictEqual(sumSceneDurations, 60, 'Sum of individual scene durations must be exactly 60');
+  assert(updatedManifest2.scenes[0].duration > 6, 'Scene 0 duration must have scaled up from 6s');
+  assert(updatedManifest2.scenes[1].duration > 14, 'Scene 1 duration must have scaled up from 14s');
+  
+  // Ratio of 6:14 (30%:70%) in 60s is 18s and 42s
+  assert.strictEqual(updatedManifest2.scenes[0].duration, 18, 'Scene 0 should scale proportionally to 18s');
+  assert.strictEqual(updatedManifest2.scenes[1].duration, 42, 'Scene 1 should scale proportionally to 42s');
+  console.log('✅ Test 6 Passed: Proportional rescaling updates individual scene durations to exactly 60s');
+
   // Clean up test directory
   try {
     fs.rmSync(testProjectDir, { recursive: true, force: true });
