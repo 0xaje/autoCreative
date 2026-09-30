@@ -5,9 +5,54 @@ const config = require('../config');
 const { ensureDir, getVideoMetadata, runFFmpeg } = require('../utils/ffmpegHelper');
 const { getProjectBrandTheme } = require('../utils/brandDesigner');
 
+/**
+ * Strict Content Security Policy for motion graphics rendering in headless Chrome.
+ * Prohibits script execution, object/plugin loading, and external network resources.
+ */
+const STRICT_CSP_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; font-src data:; img-src data:; script-src \'none\'; object-src \'none\'; base-uri \'none\';">';
+
+/**
+ * Sanitize untrusted external string data before interpolation into motion HTML.
+ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 class MotionDesigner {
   constructor(options = {}) {
     this.options = options;
+  }
+
+  /**
+   * Determine Chrome arguments with least-privilege sandboxing principles.
+   * Avoids --no-sandbox unless explicitly requested via options, environment variable,
+   * or when running in root container environments where kernel namespaces are unavailable.
+   */
+  getChromeLaunchArgs({ width = 1920, height = 1080, forceNoSandbox = false } = {}) {
+    const isRoot = typeof process.getuid === 'function' && process.getuid() === 0;
+    const shouldDisableSandbox = forceNoSandbox ||
+      this.options.noSandbox === true ||
+      process.env.CHROME_NO_SANDBOX === 'true' ||
+      isRoot;
+
+    const args = [
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      `--window-size=${width},${height}`,
+      '--hide-scrollbars'
+    ];
+
+    if (shouldDisableSandbox) {
+      args.push('--no-sandbox', '--disable-setuid-sandbox');
+    }
+
+    return { args, shouldDisableSandbox };
   }
 
   /**
@@ -40,19 +85,28 @@ class MotionDesigner {
     });
 
     let browser = null;
+    const { args: launchArgs, shouldDisableSandbox } = this.getChromeLaunchArgs({ width, height });
 
     try {
-      browser = await puppeteer.launch({
-        executablePath: config.BINARIES.chrome,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-gpu',
-          `--window-size=${width},${height}`,
-          '--hide-scrollbars'
-        ],
-        headless: 'new'
-      });
+      try {
+        browser = await puppeteer.launch({
+          executablePath: config.BINARIES.chrome,
+          args: launchArgs,
+          headless: 'new'
+        });
+      } catch (launchErr) {
+        // Fallback: If sandbox fails to initialize (e.g. in restricted CI/Docker without user namespaces),
+        // gracefully retry with --no-sandbox so rendering does not fail in unprivileged containers.
+        if (!shouldDisableSandbox && (launchErr.message.includes('sandbox') || launchErr.message.includes('setuid') || launchErr.message.includes('zygote'))) {
+          browser = await puppeteer.launch({
+            executablePath: config.BINARIES.chrome,
+            args: [...launchArgs, '--no-sandbox', '--disable-setuid-sandbox'],
+            headless: 'new'
+          });
+        } else {
+          throw launchErr;
+        }
+      }
 
       const page = await browser.newPage();
       await page.setViewport({ width, height });
@@ -104,9 +158,13 @@ class MotionDesigner {
    * Procedural HTML/CSS template generator for motion graphics with dynamic Brand Design Identity
    */
   generateMotionHtml({ motionType, scene, sourceAnalysis = {}, width, height }) {
-    const productName = sourceAnalysis.project || sourceAnalysis.name || scene?.title || 'Autonomous Studio';
-    const tagline = sourceAnalysis.purpose || sourceAnalysis.tagline || 'Next-Gen Creative Production';
+    const rawProductName = sourceAnalysis.project || sourceAnalysis.name || scene?.title || 'Autonomous Studio';
+    const rawTagline = sourceAnalysis.purpose || sourceAnalysis.tagline || 'Next-Gen Creative Production';
     const theme = scene?.theme || getProjectBrandTheme(sourceAnalysis);
+
+    const productName = escapeHtml(rawProductName);
+    const tagline = escapeHtml(rawTagline);
+    const themeName = escapeHtml(theme.name || '');
 
     const techStack = [...new Set([...(sourceAnalysis.techBadges || []), ...(sourceAnalysis.integrations || []), ...(sourceAnalysis.githubData?.detectedTech || [])])];
     const features = sourceAnalysis.features || [];
@@ -114,15 +172,15 @@ class MotionDesigner {
     const keyMetrics = sourceAnalysis.keyMetrics || [];
     const visualAssets = sourceAnalysis.visualAssets || {};
     const sourceTree = sourceAnalysis.githubData?.sourceTree || ['src/', 'package.json', 'README.md'];
-    const featureName = scene.overlay?.lowerThird?.subtitle || scene.title || 'Verified Architecture';
+    const featureName = escapeHtml(scene?.overlay?.lowerThird?.subtitle || scene?.title || 'Verified Architecture');
 
     if (motionType === 'code_walkthrough') {
       const techBadges = techStack.slice(0, 6).map(t =>
-        `<span style="background: ${theme.badgeBg}; border: 1px solid ${theme.borderColor}; padding: 8px 18px; border-radius: 8px; font-size: 16px; font-weight: 600; color: ${theme.accentBadge};">${t}</span>`
+        `<span style="background: ${theme.badgeBg}; border: 1px solid ${theme.borderColor}; padding: 8px 18px; border-radius: 8px; font-size: 16px; font-weight: 600; color: ${theme.accentBadge};">${escapeHtml(t)}</span>`
       ).join('');
 
       const treeItems = sourceTree.slice(0, 8).map(f =>
-        `<div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 16px; color: #94a3b8; padding: 4px 0;"><span style="color: ${theme.primary};">📄</span> ${f}</div>`
+        `<div style="display: flex; align-items: center; gap: 10px; font-family: monospace; font-size: 16px; color: #94a3b8; padding: 4px 0;"><span style="color: ${theme.primary};">📄</span> ${escapeHtml(f)}</div>`
       ).join('');
 
       return `
@@ -130,6 +188,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -249,8 +308,8 @@ class MotionDesigner {
           `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 22px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: flex-start; gap: 16px; backdrop-filter: blur(15px);">
             <div style="width: 40px; height: 40px; min-width: 40px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 18px; color: ${theme.primary}; font-weight: bold;">✓</div>
             <div>
-              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${c.title}</div>
-              <div style="font-size: 14px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">${c.description || 'Verified live application capability'}</div>
+              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${escapeHtml(c.title || '')}</div>
+              <div style="font-size: 14px; color: #94a3b8; margin-top: 6px; line-height: 1.4;">${escapeHtml(c.description || 'Verified live application capability')}</div>
             </div>
           </div>`
         ).join('')
@@ -258,7 +317,7 @@ class MotionDesigner {
           `<div style="background: ${theme.cardBg}; border: 1px solid ${theme.borderColor}; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 16px; backdrop-filter: blur(15px);">
             <div style="width: 44px; height: 44px; border-radius: 10px; background: ${theme.badgeBg}; display: flex; align-items: center; justify-content: center; font-size: 20px; color: ${theme.primary}; font-weight: bold;">✓</div>
             <div>
-              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${f}</div>
+              <div style="font-size: 18px; font-weight: 700; color: #ffffff;">${escapeHtml(f)}</div>
               <div style="font-size: 14px; color: #94a3b8; margin-top: 4px;">Verified capability from repository intelligence</div>
             </div>
           </div>`
@@ -269,6 +328,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -349,6 +409,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -465,11 +526,16 @@ class MotionDesigner {
     }
 
     if (motionType === 'problem_solution_split') {
+      const problemTitle = escapeHtml(sourceAnalysis.problemTitle || 'Operational Friction');
+      const problem = escapeHtml(sourceAnalysis.problem || 'Fragmented workflows and manual processes create bottlenecks that cost engineering teams valuable velocity and focus.');
+      const solutionPurpose = escapeHtml(sourceAnalysis.purpose || rawTagline || 'A high-performance unified platform engineered to eliminate operational friction and deliver verified results.');
+
       return `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -554,13 +620,13 @@ class MotionDesigner {
           <div class="cards">
             <div class="column problem">
               <div class="tag">The Challenge</div>
-              <h3>${sourceAnalysis.problemTitle || 'Operational Friction'}</h3>
-              <p>${sourceAnalysis.problem || 'Fragmented workflows and manual processes create bottlenecks that cost engineering teams valuable velocity and focus.'}</p>
+              <h3>${problemTitle}</h3>
+              <p>${problem}</p>
             </div>
             <div class="column solution">
               <div class="tag">The Solution</div>
               <h3>${productName}</h3>
-              <p>${sourceAnalysis.purpose || tagline || 'A high-performance unified platform engineered to eliminate operational friction and deliver verified results.'}</p>
+              <p>${solutionPurpose}</p>
             </div>
           </div>
         </body>
@@ -575,6 +641,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -660,7 +727,7 @@ class MotionDesigner {
           <div class="hud-bracket-tr">[CORE.READY] ─┐</div>
           <div class="hud-bracket-bl">└─ [TEL.VERIFIED]</div>
           <div class="hud-bracket-br">[BROADCAST.MP4] ─┘</div>
-          <div class="telemetry-bar">PLATFORM INTELLIGENCE // ${theme.name.toUpperCase()} // REGION: GLOBAL</div>
+          <div class="telemetry-bar">PLATFORM INTELLIGENCE // ${themeName.toUpperCase()} // REGION: GLOBAL</div>
           <div class="hero-card">
             <div class="badge">SYS // VERIFIED LAUNCH</div>
             <h1>${productName}</h1>
@@ -677,6 +744,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -772,6 +840,7 @@ class MotionDesigner {
         <html>
         <head>
           <meta charset="utf-8">
+          ${STRICT_CSP_META}
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
@@ -850,6 +919,7 @@ class MotionDesigner {
       <html>
       <head>
         <meta charset="utf-8">
+        ${STRICT_CSP_META}
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
@@ -933,5 +1003,8 @@ class MotionDesigner {
     `;
   }
 }
+
+MotionDesigner.escapeHtml = escapeHtml;
+MotionDesigner.STRICT_CSP_META = STRICT_CSP_META;
 
 module.exports = MotionDesigner;
