@@ -143,6 +143,7 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
     }
 
     const pipeline = activePipelines.get(projectId) || new ProductionPipeline();
+    activePipelines.set(projectId, pipeline);
     pipeline.on('progress', (data) => broadcast('progress', data));
 
     res.json({ success: true, message: `Selective regeneration started for scene ${sceneIndex}` });
@@ -155,11 +156,14 @@ app.post('/api/projects/:id/regenerate-scene', async (req, res) => {
     }).then(result => {
       broadcast('scene_regenerated', { projectId, sceneIndex, result });
     }).catch(err => {
+      console.error(`Scene regeneration error on project ${projectId}:`, err);
       broadcast('error', { projectId, error: err.message });
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
@@ -192,7 +196,9 @@ app.post('/api/projects/:id/regenerate-intent', async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
@@ -300,7 +306,9 @@ app.post('/api/projects/:id/regenerate', async (req, res) => {
       }).catch(err => broadcast('error', { projectId, error: err.message }));
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 

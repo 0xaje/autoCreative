@@ -606,6 +606,237 @@ class ProductionPipeline extends EventEmitter {
   }
 
   /**
+   * Selective Scene Regeneration (Section 21 & 22 of PRD)
+   * Regenerates an individual scene (narration and/or recording/motion graphic),
+   * then re-mixes audio and re-renders the final broadcast MP4 without re-running full pipeline.
+   */
+  async regenerateScene(projectId, sceneIndex, options = {}) {
+    const projectDir = path.join(config.PROJECTS_DIR, projectId);
+    const projectJsonPath = path.join(projectDir, 'project.json');
+    if (!fs.existsSync(projectJsonPath)) {
+      throw this.wrapError('PROJECT_NOT_FOUND', `Project ${projectId} not found`);
+    }
+
+    const projectData = JSON.parse(fs.readFileSync(projectJsonPath, 'utf8'));
+    const manifestPath = path.join(projectDir, 'scene-manifest.json');
+    if (!fs.existsSync(manifestPath)) {
+      throw this.wrapError('MANIFEST_NOT_FOUND', `Scene manifest not found for project ${projectId}`);
+    }
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+    let projectModel = {};
+    const modelPath = path.join(projectDir, 'project_model.json');
+    if (fs.existsSync(modelPath)) {
+      try {
+        projectModel = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
+      } catch (_) {}
+    } else if (projectData.projectModel) {
+      projectModel = projectData.projectModel;
+    }
+
+    const log = (agent, message, percent) => {
+      this.emit('progress', {
+        projectId,
+        stage: 'REGENERATING',
+        agent: `[SCENE REGEN] ${agent}`,
+        message,
+        percent
+      });
+    };
+
+    const idx = parseInt(sceneIndex, 10);
+    const targetScene = manifest.scenes[idx];
+    if (!targetScene) {
+      throw this.wrapError(
+        'SCENE_NOT_FOUND',
+        `Scene at index ${idx} not found in project ${projectId} (total scenes: ${manifest.scenes.length})`
+      );
+    }
+
+    log('Creative Director', `Starting selective regeneration for Scene ${idx + 1}: "${targetScene.title}"...`, 10);
+
+    // 1. Update text / visual plan / duration
+    if (options.narrationText) {
+      targetScene.voiceover = options.narrationText;
+      targetScene.narrationText = options.narrationText;
+    }
+    if (options.visualPlan) {
+      targetScene.visualPlan = { ...targetScene.visualPlan, ...options.visualPlan };
+    }
+    if (options.duration || options.targetDuration) {
+      targetScene.duration = options.duration || options.targetDuration;
+    }
+
+    // 2. Synthesize new neural voice track for target scene
+    const voiceId = options.voiceId || projectData.inputs?.voiceId;
+    log('Voice Producer', `Re-synthesizing voice for Scene ${idx + 1}: "${targetScene.title}"...`, 25);
+    const vResult = await this.voiceProducer.produceSceneVoice({
+      scene: {
+        id: targetScene.id,
+        title: targetScene.title,
+        narrationText: targetScene.voiceover || targetScene.narrationText,
+        targetDuration: targetScene.duration
+      },
+      voiceId,
+      projectDir,
+      onProgress: (p) => log(p.agent, p.message, 35)
+    });
+
+    targetScene.audioPath = vResult.audioPath;
+    targetScene.subtitlesPath = vResult.subtitlesPath;
+    targetScene.audioDuration = vResult.duration;
+    targetScene.subtitles = vResult.subtitles;
+
+    if (vResult.duration > (targetScene.duration || 6)) {
+      targetScene.duration = Math.ceil(vResult.duration + 0.5);
+    }
+    const sceneTargetDuration = Math.max(targetScene.duration || 8, Math.ceil(vResult.duration || 0));
+
+    // 3. Re-record or re-render visual if requested or needed
+    const primaryVisual = targetScene.visuals?.[0] || {};
+    const isBrowserRecording = primaryVisual.source === 'browser_recording' || targetScene.type === 'product_demo';
+
+    if (options.reRecord || options.visualPlan || !targetScene.videoPath || !fs.existsSync(targetScene.videoPath)) {
+      if (isBrowserRecording) {
+        let targetUrl = null;
+        const discoveryPath = path.join(projectDir, 'discovery.json');
+        if (fs.existsSync(discoveryPath)) {
+          try {
+            const discovery = JSON.parse(fs.readFileSync(discoveryPath, 'utf8'));
+            targetUrl = discovery.targetUrl;
+          } catch (_) {}
+        }
+        if (!targetUrl) {
+          targetUrl = projectData.inputs?.liveUrl;
+        }
+
+        if (targetUrl) {
+          log('Screen Recorder', `Re-recording product interaction for Scene ${idx + 1}...`, 50);
+          const recordingResult = await this.screenRecorder.recordSceneFootage({
+            scene: {
+              id: targetScene.id,
+              title: targetScene.title,
+              targetDuration: sceneTargetDuration,
+              overlay: targetScene.overlay,
+              visualPlan: targetScene.visualPlan
+            },
+            targetUrl,
+            durationSeconds: sceneTargetDuration,
+            resolution: manifest.resolution,
+            projectModel,
+            projectDir,
+            onProgress: (p) => log(p.agent, p.message, 55)
+          });
+          targetScene.videoPath = recordingResult.outputPath;
+          targetScene.recordingMetadata = recordingResult.metadataPath;
+        } else {
+          log('Screen Recorder', `Target URL unavailable for re-recording, maintaining existing footage for Scene ${idx + 1}`, 50);
+        }
+      } else {
+        log('Motion Designer', `Re-rendering motion graphics for Scene ${idx + 1}...`, 50);
+        const motionType = primaryVisual.motionType || targetScene.visualPlan?.motionType || (targetScene.id === 'hook' ? 'intro_cinematic' : targetScene.id === 'product_reveal' ? 'problem_solution_split' : 'outro_cta');
+        const motionResult = await this.motionDesigner.renderMotionClip({
+          scene: {
+            id: targetScene.id,
+            title: targetScene.title,
+            targetDuration: sceneTargetDuration,
+            visualPlan: { motionType },
+            overlay: targetScene.overlay
+          },
+          sourceAnalysis: projectModel,
+          durationSeconds: sceneTargetDuration,
+          resolution: manifest.resolution,
+          projectDir,
+          onProgress: (p) => log(p.agent, p.message, 55)
+        });
+        targetScene.videoPath = motionResult.outputPath;
+      }
+    }
+
+    manifest.scenes[idx] = targetScene;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+    // 4. Re-mix master audio track
+    log('Audio Engineer', 'Re-mixing master soundtrack with updated scene audio...', 70);
+    const timelineDuration = manifest.scenes.reduce((acc, s) => acc + (s.duration || 8), 0);
+    const masterAudio = await this.audioEngineer.produceMasterAudio({
+      scenes: manifest.scenes,
+      totalDuration: timelineDuration,
+      musicStyle: projectData.inputs?.musicStyle || 'cinematic',
+      projectDir,
+      onProgress: (p) => log(p.agent, p.message, 75)
+    });
+
+    // 5. Re-render final broadcast video
+    log('Video Editor', 'Re-rendering broadcast MP4 with updated scene and audio...', 85);
+    const renderResult = await this.videoEditor.composeAndRender({
+      scenes: manifest.scenes.map(s => ({
+        ...s,
+        narrationText: s.voiceover || s.narrationText,
+        targetDuration: s.duration
+      })),
+      masterAudioPath: masterAudio.masterMixPath,
+      resolution: manifest.resolution,
+      projectDir,
+      onProgress: (p) => log(p.agent, p.message, 90)
+    });
+
+    // 6. Quality Controller verification
+    log('Quality Controller', 'Inspecting regenerated MP4 output...', 95);
+    const qcReport = await this.qualityController.inspectMasterVideo({
+      videoPath: renderResult.projectRootMp4,
+      targetDuration: timelineDuration,
+      resolution: manifest.resolution,
+      projectDir,
+      onProgress: (p) => log(p.agent, p.message, 98)
+    });
+
+    projectData.finalVideo = {
+      path: renderResult.projectRootMp4,
+      duration: renderResult.duration,
+      width: renderResult.width,
+      height: renderResult.height,
+      sizeBytes: renderResult.sizeBytes
+    };
+    projectData.qc = qcReport;
+    projectData.qcReport = qcReport;
+    fs.writeFileSync(projectJsonPath, JSON.stringify(projectData, null, 2), 'utf8');
+
+    // Save updated asset-manifest.json
+    const assetManifest = {
+      projectId,
+      scenes: manifest.scenes.map(s => ({
+        id: s.id,
+        title: s.title,
+        type: s.type,
+        audioPath: s.audioPath,
+        audioDuration: s.audioDuration,
+        subtitlesPath: s.subtitlesPath,
+        videoPath: s.videoPath,
+        visuals: s.visuals
+      })),
+      audio: {
+        masterMix: masterAudio.masterMixPath,
+        soundtrackBed: masterAudio.soundtrackBedPath,
+        narrationMaster: masterAudio.narrationMasterPath
+      },
+      regeneratedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(path.join(projectDir, 'asset-manifest.json'), JSON.stringify(assetManifest, null, 2), 'utf8');
+
+    log('Creative Director', `Selective scene regeneration complete for Scene ${idx + 1}! (${renderResult.duration.toFixed(1)}s broadcast MP4)`, 100);
+
+    return {
+      success: true,
+      sceneIndex: idx,
+      scene: targetScene,
+      manifest,
+      projectData,
+      finalVideo: projectData.finalVideo
+    };
+  }
+
+  /**
    * Helper to construct explicit PRD failure errors
    */
   wrapError(code, message) {
